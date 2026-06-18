@@ -191,29 +191,40 @@ let history=[];           // recent valid freqs (median filter)
 let smoothCents=0;        // eased needle value
 let target=null, lockHold=0, lockProg=0, locked=false, lastT=performance.now();
 let particles=[];
+let graceUntil=0;
 
 function detect(b,rate){
-  let size=b.length,rms=0;
-  for(let i=0;i<size;i++)rms+=b[i]*b[i];
-  rms=Math.sqrt(rms/size);
-  if(rms<0.01)return null;                 // too quiet
-  let r1=0,r2=size-1,th=0.2;
-  for(let i=0;i<size/2;i++)if(Math.abs(b[i])<th){r1=i;break;}
-  for(let i=1;i<size/2;i++)if(Math.abs(b[size-i])<th){r2=size-i;break;}
-  const c=b.slice(r1,r2);size=c.length;
-  const corr=new Float32Array(size);
-  for(let i=0;i<size;i++)for(let j=0;j<size-i;j++)corr[i]+=c[j]*c[j+i];
-  let d=0;while(d<size-1&&corr[d]>corr[d+1])d++;
-  let max=-1,pos=-1;
-  for(let i=d;i<size;i++)if(corr[i]>max){max=corr[i];pos=i;}
-  if(pos<=0)return null;
-  const clarity=corr[0]>0?max/corr[0]:0;   // periodicity strength 0..1
-  if(clarity<0.55)return null;             // reject noisy / unclear sound
-  let T=pos;
-  const a=corr[pos-1],bb=corr[pos],cc=corr[pos+1];
-  const sh=(cc-a)/(2*(2*bb-a-cc));if(isFinite(sh))T=pos+sh;
-  const f=rate/T;
-  return (f>55&&f<1300)?{f,clarity}:null;
+  const n=b.length;
+  let rms=0;for(let i=0;i<n;i++)rms+=b[i]*b[i];rms=Math.sqrt(rms/n);
+  if(rms<0.006)return null;                       // loudness gate (lowered = more sensitive)
+  const minLag=Math.floor(rate/1300), maxLag=Math.floor(rate/70);
+  // Normalized square-difference (McLeod Pitch Method) — robust against octave jumps
+  const nsdf=new Float32Array(maxLag+1);
+  for(let tau=minLag;tau<=maxLag;tau++){
+    let ac=0,m=0;
+    for(let j=0;j+tau<n;j++){ac+=b[j]*b[j+tau];m+=b[j]*b[j]+b[j+tau]*b[j+tau];}
+    nsdf[tau]=m>0?2*ac/m:0;
+  }
+  let tau=minLag;
+  while(tau<maxLag&&nsdf[tau]>0)tau++;             // skip the initial descending lobe
+  let peaks=[],maxPeak=0;
+  while(tau<maxLag){
+    if(nsdf[tau]>0){
+      let pt=tau,pv=nsdf[tau];
+      while(tau<maxLag&&nsdf[tau]>0){if(nsdf[tau]>pv){pv=nsdf[tau];pt=tau;}tau++;}
+      peaks.push([pt,pv]);if(pv>maxPeak)maxPeak=pv;
+    }else tau++;
+  }
+  if(!peaks.length||maxPeak<0.5)return null;       // clarity gate
+  const thresh=maxPeak*0.9;                         // first strong peak = true fundamental
+  let pt=-1,pv=0;
+  for(const p of peaks){if(p[1]>=thresh){pt=p[0];pv=p[1];break;}}
+  if(pt<1)return null;
+  const a=nsdf[pt-1],bb=nsdf[pt],cc=nsdf[pt+1];     // parabolic interpolation
+  const sh=(a-cc)/(2*(a-2*bb+cc));
+  const period=pt+(isFinite(sh)?sh:0);
+  const f=rate/period;
+  return (f>60&&f<1300)?{f,clarity:pv}:null;
 }
 function median(arr){const s=[...arr].sort((x,y)=>x-y);return s[Math.floor(s.length/2)];}
 
@@ -232,11 +243,12 @@ function loop(){
   const res=detect(buf,audioCtx.sampleRate);
 
   if(res){
-    history.push(res.f);if(history.length>6)history.shift();
+    history.push(res.f);if(history.length>8)history.shift();
     const f=median(history);
     const {s,cents}=nearestString(f);
     target=s;markTarget(TUNINGS[inst].indexOf(s));
     smoothCents+=(cents-smoothCents)*0.25;
+    graceUntil=now+350;                            // hold this reading briefly if sound drops
 
     // lock logic with hysteresis
     const a=Math.abs(cents);
@@ -248,7 +260,6 @@ function loop(){
     if(lockProg>=1&&!locked){locked=true;celebrate(s);}
     if(locked&&a>16)locked=false;
 
-    // UI text
     $('note').innerHTML=`${s.n}<small>${s.o}</small>`;
     $('cents').textContent=(cents>=0?'+':'')+Math.round(cents)+'¢';
     let col;
@@ -257,10 +268,14 @@ function loop(){
     else{col=getCss('--bad');$('state').textContent=cents>0?'too sharp · loosen':'too flat · tighten';}
     $('note').style.color=col;
     render(smoothCents,res.clarity,locked,lockProg,col);
+  }else if(now<graceUntil){
+    // momentary dropout — keep the display steady so it doesn't flicker
+    lockHold=Math.max(0,lockHold-dt*0.5);lockProg=Math.min(1,lockHold/0.8);
+    render(smoothCents,0,locked,lockProg,$('note').style.color||null);
   }else{
     history.length=0;lockHold=Math.max(0,lockHold-dt*2);lockProg=Math.min(1,lockHold/0.8);
     smoothCents*=0.9;
-    if(!locked){$('state').textContent='listening…';markTarget(-1);}
+    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='—';$('note').style.color='';$('cents').textContent='';}
     render(smoothCents,0,locked,lockProg,null);
   }
   stepParticles(dt);
