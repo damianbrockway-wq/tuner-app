@@ -1,7 +1,7 @@
 {
-  "name": "String Tuner",
-  "short_name": "Tuner",
-  "description": "Guitar & ukulele tuner with live mic pitch detection and reference tones.",
+  "name": "Pluck",
+  "short_name": "Pluck",
+  "description": "Pluck — a guitar & ukulele tuner and chord coach with live pitch detection.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
