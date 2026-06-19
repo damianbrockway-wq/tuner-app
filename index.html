@@ -51,7 +51,7 @@
   canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;
     background:radial-gradient(circle at 50% 50%,rgba(124,108,255,.06),rgba(8,6,15,0) 72%)}
   .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-  .note{font-size:clamp(58px,22vw,96px);font-weight:800;line-height:.9;letter-spacing:-2px;
+  .note{font-size:clamp(58px,22vw,96px);font-weight:800;line-height:.9;letter-spacing:-2px;min-height:0.9em;
     text-shadow:0 0 30px currentColor;transition:color .2s}
   .note small{font-size:.34em;font-weight:700;vertical-align:super;opacity:.6;letter-spacing:0}
   .cents{font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;color:var(--muted);margin-top:4px;height:20px}
@@ -96,7 +96,7 @@
   <div class="dialWrap">
     <canvas id="dial"></canvas>
     <div class="center">
-      <div class="note" id="note">—</div>
+      <div class="note" id="note"></div>
       <div class="cents" id="cents"></div>
       <div class="state" id="state">tap a string ▾</div>
     </div>
@@ -217,7 +217,7 @@ function stopMic(){
   releaseWake();
   if(micStream)micStream.getTracks().forEach(t=>t.stop());
   $('micBtn').textContent='Start Tuning';$('micBtn').classList.remove('live');
-  $('note').textContent='—';$('note').style.color='';$('cents').textContent='';
+  $('note').textContent='';$('note').style.color='';$('cents').textContent='';
   $('state').textContent='tap a string ▾';markTarget(-1);
   render(0,0,false,0,null);
 }
@@ -311,7 +311,7 @@ function loop(){
   }else{
     history.length=0;lockHold=Math.max(0,lockHold-dt*2);lockProg=Math.min(1,lockHold/0.8);
     smoothCents*=0.9;
-    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='—';$('note').style.color='';$('cents').textContent='';}
+    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='';$('note').style.color='';$('cents').textContent='';}
     render(smoothCents,0,locked,lockProg,null);
   }
   stepParticles(dt);
