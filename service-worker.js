@@ -1,7 +1,8 @@
-const CACHE = 'tuner-v3';
+const CACHE = 'tuner-v4';
 const ASSETS = [
   './',
   './index.html',
+  './chord-coach.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

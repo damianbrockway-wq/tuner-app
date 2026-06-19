@@ -106,6 +106,7 @@
 
   <button class="mic" id="micBtn">Start Tuning</button>
   <div class="hint" id="hint">Tap a string to hear its note · or start the mic and play. Hold it steady in the green — it locks when you nail it.</div>
+  <a href="chord-coach.html" style="margin-top:10px;color:#9d8bff;text-decoration:none;font-size:13px;font-weight:700">🎶 Chord Coach →</a>
 </div>
 
 <script>
@@ -116,6 +117,7 @@ const TUNINGS={
 const $=id=>document.getElementById(id);
 let inst='guitar', audioCtx=null, analyser=null, micStream=null, running=false, rafId=null;
 let tuned={}; // key -> true
+let wakeLock=null, watchTimer=null;
 
 /* ---------- string buttons ---------- */
 function key(s){return s.n+s.o}
@@ -140,7 +142,33 @@ function markTuned(s){
 }
 
 /* ---------- audio: reference tone ---------- */
-function ensureCtx(){return audioCtx||(audioCtx=new (window.AudioContext||window.webkitAudioContext)());}
+function ensureCtx(){
+  if(!audioCtx){
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    // iOS suspends the context on lock / interruption — auto-resume while we're meant to be running
+    audioCtx.onstatechange=()=>{ if(running && audioCtx.state!=='running') audioCtx.resume().catch(()=>{}); };
+  }
+  return audioCtx;
+}
+
+/* ---------- keep awake + recover from mic/audio interruptions ---------- */
+async function keepAwake(){
+  try{
+    if('wakeLock' in navigator && document.visibilityState==='visible' && !wakeLock){
+      wakeLock=await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release',()=>{ wakeLock=null; });
+    }
+  }catch(e){}
+}
+function releaseWake(){ try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
+async function resumeAudio(){ try{ if(audioCtx && audioCtx.state!=='running') await audioCtx.resume(); }catch(e){} }
+async function connectMic(){
+  micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
+  const src=audioCtx.createMediaStreamSource(micStream);
+  analyser=audioCtx.createAnalyser(); analyser.fftSize=4096; src.connect(analyser);
+  micStream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(running) connectMic().catch(()=>{}); }; });
+}
+function watchdog(){ if(!running) return; resumeAudio(); keepAwake(); }
 function playTone(freq){
   const ctx=ensureCtx(); if(ctx.state==='suspended')ctx.resume();
   const o=ctx.createOscillator(),g=ctx.createGain();
@@ -151,33 +179,42 @@ function playTone(freq){
   o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+1.7);
 }
 function chime(){
-  const ctx=ensureCtx();const now=ctx.currentTime;
-  [659.25,987.77,1318.5].forEach((f,i)=>{
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.type='sine';o.frequency.value=f;
-    const t=now+i*0.07;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.25,t+0.02);
-    g.gain.exponentialRampToValueAtTime(0.0008,t+0.5);
-    o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.55);
+  const ctx=ensureCtx(); if(ctx.state!=='running')ctx.resume(); const now=ctx.currentTime;
+  const notes=[523.25,659.25,783.99,1046.50];        // C-E-G-C, bright ascending major
+  notes.forEach((f,i)=>{
+    const t=now+i*0.085;
+    [[f,'sine',0.22],[f*2,'sine',0.05],[f,'triangle',0.05]].forEach(([freq,type,amp])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=type;o.frequency.value=freq;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0006,t+0.6);
+      o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.65);
+    });
   });
+  const t2=now+0.34, o=ctx.createOscillator(), g=ctx.createGain();   // final shimmer up
+  o.type='sine';o.frequency.setValueAtTime(1046.5,t2);o.frequency.exponentialRampToValueAtTime(1567.98,t2+0.45);
+  g.gain.setValueAtTime(0,t2);g.gain.linearRampToValueAtTime(0.12,t2+0.03);g.gain.exponentialRampToValueAtTime(0.0005,t2+0.7);
+  o.connect(g).connect(ctx.destination);o.start(t2);o.stop(t2+0.75);
 }
 
 /* ---------- mic ---------- */
 async function toggleMic(){
   if(running)return stopMic();
   try{
-    const ctx=ensureCtx(); if(ctx.state==='suspended')await ctx.resume();
-    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
-    const src=ctx.createMediaStreamSource(micStream);
-    analyser=ctx.createAnalyser();analyser.fftSize=4096;src.connect(analyser);
+    const ctx=ensureCtx(); if(ctx.state!=='running')await ctx.resume();
+    await connectMic();
     running=true;
     $('micBtn').textContent='Stop';$('micBtn').classList.add('live');
     $('state').textContent='listening…';
+    keepAwake();
+    if(!watchTimer)watchTimer=setInterval(watchdog,1200);
     loop();
   }catch(e){$('state').textContent='mic blocked';}
 }
 function stopMic(){
   running=false;cancelAnimationFrame(rafId);
+  if(watchTimer){clearInterval(watchTimer);watchTimer=null;}
+  releaseWake();
   if(micStream)micStream.getTracks().forEach(t=>t.stop());
   $('micBtn').textContent='Start Tuning';$('micBtn').classList.remove('live');
   $('note').textContent='—';$('note').style.color='';$('cents').textContent='';
@@ -185,7 +222,6 @@ function stopMic(){
   render(0,0,false,0,null);
 }
 
-/* ---------- pitch detection (autocorrelation + clarity) ---------- */
 const buf=new Float32Array(4096);
 let history=[];           // recent valid freqs (median filter)
 let smoothCents=0;        // eased needle value
@@ -385,6 +421,7 @@ $('instrument').addEventListener('click',e=>{
   buildStrings();
 });
 $('micBtn').addEventListener('click',toggleMic);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&running){ resumeAudio(); keepAwake(); } });
 
 sizeCanvas();buildStrings();render(0,0,false,0,null);
 
