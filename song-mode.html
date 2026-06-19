@@ -125,6 +125,7 @@ const CHORDS={
   'D' :{frets:[2,2,2,0],fingers:[1,2,3,0],pcs:[2,6,9],    notes:['D','F#','A']},
   'A' :{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4],    notes:['A','C#','E']},
   'E' :{frets:[1,4,0,2],fingers:[1,4,0,2],pcs:[4,8,11],   notes:['E','G#','B']},
+  'F#m':{frets:[2,1,2,0],fingers:[3,1,2,0],pcs:[1,6,9],   notes:['F#','A','C#']},
   'C7':{frets:[0,0,0,1],fingers:[0,0,0,1],pcs:[0,4,7,10], notes:['C','E','G','B♭']},
   'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5], notes:['G','B','D','F']}
 };
@@ -145,7 +146,15 @@ const SONGS=[
  {title:"Livin' on a Prayer",artist:'Bon Jovi · 1986 (chorus)',diff:'med',
   sections:[{name:'Intro',chords:['Em','C']},{name:'Verse',chords:['Em','C','D','G','Em','C','D','G']},{name:'Chorus',chords:['Em','C','D','Em','C','D']}]},
  {title:'Walking on Sunshine',artist:'Katrina & The Waves · 1985',diff:'hard',
-  sections:[{name:'Intro',chords:['A','D']},{name:'Verse',chords:['A','D','E','A','D','E']},{name:'Chorus',chords:['A','D','E','A','D','E']}]}
+  sections:[{name:'Intro',chords:['A','D']},{name:'Verse',chords:['A','D','E','A','D','E']},{name:'Chorus',chords:['A','D','E','A','D','E']}]},
+ {title:'Take On Me',artist:'a-ha · 1985',diff:'hard',
+  sections:[{name:'Intro',chords:['A','E']},{name:'Verse',chords:['A','E','F#m','D','A','E','F#m','D']},{name:'Chorus',chords:['A','E','F#m','D','A','E','F#m','D']}]},
+ {title:'Every Breath You Take',artist:'The Police · 1983',diff:'hard',
+  sections:[{name:'Intro',chords:['A','F#m']},{name:'Verse',chords:['A','F#m','D','E','A','F#m','D','E']},{name:'Chorus',chords:['A','F#m','D','E','A','F#m','D','E']}]},
+ {title:"Don't Stop Believin'",artist:'Journey · 1981',diff:'easy',
+  sections:[{name:'Intro',chords:['C','G']},{name:'Verse',chords:['C','G','Am','F','C','G','Am','F']},{name:'Chorus',chords:['C','G','Am','F','C','G','Am','F']}]},
+ {title:'Wake Me Up Before You Go-Go',artist:'Wham! · 1984',diff:'easy',
+  sections:[{name:'Intro',chords:['C','F']},{name:'Verse',chords:['C','F','G','C','F','G']},{name:'Chorus',chords:['C','F','G','C','F','G']}]}
 ];
 
 const $=id=>document.getElementById(id);
