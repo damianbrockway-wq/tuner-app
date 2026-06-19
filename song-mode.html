@@ -77,12 +77,26 @@
   .pop{position:fixed;top:36%;left:50%;transform:translate(-50%,-50%);z-index:6;font-size:84px;opacity:0;pointer-events:none}
   .pop.go{animation:pop .8s ease-out}
   @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
+
+  .modeseg{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:3px}
+  .modeseg button{border:0;background:transparent;color:var(--muted);padding:6px 18px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .modeseg button.on{background:linear-gradient(90deg,#7c6cff,#5b8cff);color:#fff}
+  .tempobar{display:flex;align-items:center;gap:10px;width:100%;max-width:330px;font-size:12px;color:var(--muted);font-weight:700}
+  .tempobar input[type=range]{flex:1;accent-color:var(--accent)}
+  .tempobar .bpm{min-width:60px;text-align:right;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .cin{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+  .beatrow{display:flex;align-items:center;gap:10px;height:18px}
+  .beatdot{width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.18)}
+  .beatdot.on{animation:beat .22s ease-out}
+  @keyframes beat{0%{transform:scale(1.9);background:var(--accent);box-shadow:0 0 16px var(--accent)}100%{transform:scale(1);background:rgba(255,255,255,.18)}}
+  .count{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);z-index:6;font-size:120px;font-weight:800;color:#fff;text-shadow:0 0 40px var(--accent);display:none}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="flash" id="flash"></div>
 <div class="pop" id="pop">✅</div>
+<div class="count" id="count"></div>
 
 <div class="wrap">
   <!-- LIST VIEW -->
@@ -96,14 +110,16 @@
   <div id="playView" style="width:100%;display:none;flex-direction:column;align-items:center;gap:10px">
     <div class="top"><button class="back" id="toList">← Songs</button><div class="brand">🎵 <b>SONG</b></div><div class="prog" id="prog">0 / 0</div></div>
     <div class="songhead"><div class="t" id="songtitle">—</div><div class="a" id="songartist"></div></div>
+    <div class="modeseg" id="modeseg"><button data-mode="wait" class="on">Wait</button><button data-mode="tempo">Tempo</button></div>
     <div class="section" id="section"></div>
     <div class="name" id="name">—</div>
     <div id="diagram"></div>
     <div class="nextc" id="nextc"></div>
     <div class="notes" id="notes"></div>
-    <div class="state" id="state">tap Start</div>
+    <div class="beatrow"><span class="beatdot" id="beatdot"></span><div class="state" id="state">tap Start</div></div>
     <div class="bar"><i id="conf"></i></div>
     <div class="chart" id="chart"></div>
+    <div class="tempobar" id="tempobar" style="display:none"><span>Tempo</span><input type="range" id="bpm" min="60" max="160" value="90"><span class="bpm" id="bpmlbl">90 BPM</span><label class="cin"><input type="checkbox" id="cin" checked>count-in</label></div>
     <div class="row">
       <button class="primary" id="startBtn">Start</button>
       <button class="ghost" id="skipBtn">Skip ⏭</button>
@@ -159,6 +175,8 @@ const SONGS=[
 
 const $=id=>document.getElementById(id);
 let SONG=null, TL=[], idx=0, target='C';
+let mode='wait', beatsPerChord=4, beatsPerBar=4, countInOn=true;
+let clockOn=false, clockT0=0, secPerBeat=0.5, lastBeat=-1, inCountIn=false, metOscs=[], metGain=null;
 
 /* ---------- list view ---------- */
 function buildList(){
@@ -181,7 +199,8 @@ function loadSong(i){
   $('songtitle').textContent=SONG.title;$('songartist').textContent=SONG.artist+' · simplified chords';
   buildChart();setCell(0);refreshTarget();
   $('listView').style.display='none';$('playView').style.display='flex';
-  $('state').textContent='tap Start';
+  $('tempobar').style.display=mode==='tempo'?'flex':'none';$('skipBtn').style.display=mode==='tempo'?'none':'';
+  $('startBtn').textContent=mode==='tempo'?'Play':'Start';$('state').textContent='tap Start';
 }
 function showList(){ if(running)stopMic(); $('playView').style.display='none';$('listView').style.display='flex'; }
 
@@ -245,17 +264,49 @@ async function toggleMic(){
   try{
     const ctx=ensureCtx();if(ctx.state!=='running')await ctx.resume();
     await connectMic();
-    running=true;ema=null;matchHold=0;celebrateUntil=0;refreshTarget();
-    $('startBtn').textContent='Stop';$('startBtn').classList.add('live');$('state').textContent='play the chord';
-    keepAwake();if(!watchTimer)watchTimer=setInterval(watchdog,1200);loop();
+    running=true;ema=null;matchHold=0;celebrateUntil=0;
+    if(mode==='tempo'){setCell(0);}
+    refreshTarget();
+    $('startBtn').textContent='Stop';$('startBtn').classList.add('live');
+    keepAwake();if(!watchTimer)watchTimer=setInterval(watchdog,1200);
+    if(mode==='tempo'){startClock();$('state').textContent='count in…';}else{$('state').textContent='play the chord';}
+    loop();
   }catch(e){$('state').textContent='mic blocked';}
 }
 function stopMic(){
   running=false;cancelAnimationFrame(rafId);
   if(watchTimer){clearInterval(watchTimer);watchTimer=null;}
-  releaseWake();if(micStream)micStream.getTracks().forEach(t=>t.stop());
-  $('startBtn').textContent='Start';$('startBtn').classList.remove('live');$('state').textContent='paused';$('conf').style.width='0';
+  stopClock();releaseWake();if(micStream)micStream.getTracks().forEach(t=>t.stop());
+  $('startBtn').textContent=mode==='tempo'?'Play':'Start';$('startBtn').classList.remove('live');$('state').textContent='paused';$('conf').style.width='0';
   document.querySelectorAll('.notes .n').forEach(n=>n.classList.remove('lit'));
+}
+
+/* ---------- tempo / metronome engine (Phase 1) ---------- */
+function pulse(){const d=$('beatdot');if(!d)return;d.classList.remove('on');void d.offsetWidth;d.classList.add('on');}
+function startClock(){
+  const bpm=+$('bpm').value;countInOn=$('cin').checked;secPerBeat=60/bpm;
+  const cb=countInOn?beatsPerBar:0, total=cb+TL.length*beatsPerChord;
+  clockT0=audioCtx.currentTime+0.18;lastBeat=-1;inCountIn=countInOn;clockOn=true;
+  metGain=audioCtx.createGain();metGain.gain.value=1;metGain.connect(audioCtx.destination);metOscs=[];
+  for(let i=0;i<total;i++){
+    const t=clockT0+i*secPerBeat, accent=(((i-cb)%beatsPerBar)+beatsPerBar)%beatsPerBar===0;
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='square';o.frequency.value=accent?1600:1050;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.16:0.09,t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
+    o.connect(g).connect(metGain);o.start(t);o.stop(t+0.09);metOscs.push(o);
+  }
+}
+function stopClock(){clockOn=false;inCountIn=false;metOscs.forEach(o=>{try{o.stop()}catch(e){}});metOscs=[];if(metGain){try{metGain.disconnect()}catch(e){}metGain=null;}const c=$('count');if(c)c.style.display='none';}
+function finishTempo(){stopClock();songComplete();}
+function tickTempo(){
+  const elapsed=audioCtx.currentTime-clockT0, gBeat=Math.floor(elapsed/secPerBeat);
+  if(gBeat===lastBeat||gBeat<0)return;
+  lastBeat=gBeat;pulse();
+  const cb=countInOn?beatsPerBar:0;
+  if(gBeat<cb){inCountIn=true;$('count').textContent=(cb-gBeat);$('count').style.display='block';$('state').textContent='count in…';return;}
+  inCountIn=false;$('count').style.display='none';
+  const songBeat=gBeat-cb;
+  if(songBeat%beatsPerChord===0){const ci=songBeat/beatsPerChord;if(ci>=TL.length){finishTempo();return;}if(ci!==idx){setCell(ci);refreshTarget();}}
 }
 
 /* ---------- detection: chromagram + template match ---------- */
@@ -265,6 +316,8 @@ function template(name){const t=new Array(12).fill(0);CHORDS[name].pcs.forEach(p
 const TPL={};POOL.forEach(n=>TPL[n]=template(n));
 function loop(){
   const now=performance.now();let dt=(now-lastT)/1000;lastT=now;if(dt>0.1)dt=0.1;
+  if(mode==='tempo'&&clockOn)tickTempo();
+  if(!running)return;
   const bins=analyser.frequencyBinCount;
   if(!freqBuf||freqBuf.length!==bins)freqBuf=new Float32Array(bins);
   if(!timeBuf||timeBuf.length!==analyser.fftSize)timeBuf=new Float32Array(analyser.fftSize);
@@ -279,7 +332,8 @@ function loop(){
   if(rms<0.006||maxc<=0){
     matchHold=Math.max(0,matchHold-dt);$('conf').style.width='0';
     document.querySelectorAll('.notes .n').forEach(n=>n.classList.remove('lit'));
-    $('state').textContent='listening…';$('name').style.color='';$('dbg').textContent='lvl '+rms.toFixed(3)+' — quiet';
+    if(!inCountIn){$('name').style.color='';if(mode==='wait')$('state').textContent='listening…';}
+    $('dbg').textContent='lvl '+rms.toFixed(3)+' — quiet';
     rafId=requestAnimationFrame(loop);return;
   }
   document.querySelectorAll('.notes .n').forEach(n=>{const pc=+n.dataset.pc;n.classList.toggle('lit',ema[pc]>0.30*maxc);});
@@ -289,9 +343,9 @@ function loop(){
   const good=sTarget>0.5 && (best===target||sTarget>=bestS-0.07) && present>=needed;
   $('conf').style.width=Math.min(100,Math.round(sTarget*120))+'%';
   $('dbg').textContent='lvl '+rms.toFixed(3)+' · '+best+' '+Math.round(bestS*100)+'% · '+target+' '+Math.round(sTarget*100)+'% · '+present+'/'+tones.length;
-  if(good){matchHold+=dt;$('name').style.color='var(--good)';$('state').textContent='nice — hold it';}
-  else{matchHold=Math.max(0,matchHold-dt*0.5);$('name').style.color='';$('state').textContent=(bestS>0.55&&best!==target)?('sounds like '+best):'keep strumming';}
-  if(matchHold>0.3)advance();
+  if(good){matchHold+=dt;if(!inCountIn){$('name').style.color='var(--good)';$('state').textContent=mode==='wait'?'nice — hold it':'on chord ✓';}}
+  else{matchHold=Math.max(0,matchHold-dt*0.5);if(!inCountIn){$('name').style.color='';if(mode==='wait')$('state').textContent=(bestS>0.55&&best!==target)?('sounds like '+best):'keep strumming';}}
+  if(mode==='wait'&&matchHold>0.3)advance();
   rafId=requestAnimationFrame(loop);
 }
 function advance(){
@@ -307,9 +361,9 @@ function advance(){
 function songComplete(){
   $('state').textContent='🎉 you played it!';$('pop').textContent='🎉';
   $('name').textContent='✓';$('name').style.color='var(--good)';
-  running=false;cancelAnimationFrame(rafId);if(watchTimer){clearInterval(watchTimer);watchTimer=null;}releaseWake();
+  running=false;cancelAnimationFrame(rafId);if(watchTimer){clearInterval(watchTimer);watchTimer=null;}stopClock();releaseWake();
   if(micStream)micStream.getTracks().forEach(t=>t.stop());
-  $('startBtn').textContent='Start';$('startBtn').classList.remove('live');
+  $('startBtn').textContent=mode==='tempo'?'Play':'Start';$('startBtn').classList.remove('live');
 }
 
 /* ---------- wiring ---------- */
@@ -317,7 +371,9 @@ buildList();
 $('startBtn').addEventListener('click',toggleMic);
 $('toList').addEventListener('click',showList);
 $('skipBtn').addEventListener('click',()=>{matchHold=0;if(idx+1<TL.length){setCell(idx+1);refreshTarget();}else songComplete();});
-$('restartBtn').addEventListener('click',()=>{$('pop').textContent='✅';[...$('chart').children].forEach(c=>c.classList.remove('done'));setCell(0);refreshTarget();$('state').textContent=running?'play the chord':'tap Start';});
+$('restartBtn').addEventListener('click',()=>{$('pop').textContent='✅';[...$('chart').children].forEach(c=>c.classList.remove('done'));setCell(0);refreshTarget();if(mode==='tempo'&&running){stopClock();startClock();$('state').textContent='count in…';}else $('state').textContent=running?'play the chord':'tap Start';});
+$('modeseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(running)stopMic();mode=b.dataset.mode;[...$('modeseg').children].forEach(c=>c.classList.toggle('on',c===b));$('tempobar').style.display=mode==='tempo'?'flex':'none';$('skipBtn').style.display=mode==='tempo'?'none':'';$('startBtn').textContent=mode==='tempo'?'Play':'Start';setCell(0);refreshTarget();});
+$('bpm').addEventListener('input',()=>{$('bpmlbl').textContent=$('bpm').value+' BPM';});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running){resumeAudio();keepAwake();}});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 </script>
