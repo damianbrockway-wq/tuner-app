@@ -116,7 +116,7 @@
     <div id="diagram"></div>
     <div class="nextc" id="nextc"></div>
     <div class="notes" id="notes"></div>
-    <div class="beatrow"><span class="beatdot" id="beatdot"></span><div class="state" id="state">tap Start</div><span id="verdict" style="font-size:11px;font-weight:800;letter-spacing:1px"></span></div>
+    <div class="beatrow"><span class="beatdot" id="beatdot"></span><div class="state" id="state">tap Start</div><span id="verdict" style="font-size:11px;font-weight:800;letter-spacing:1px"></span><span id="strum" style="font-size:11px;font-weight:800;color:var(--good);opacity:0;transition:opacity .1s">● STRUM</span></div>
     <div id="timing" style="font-size:12px;font-weight:700;color:var(--muted);height:15px"></div>
     <div class="bar"><i id="conf"></i></div>
     <div class="chart" id="chart"></div>
@@ -127,6 +127,7 @@
       <button class="ghost" id="restartBtn">↺</button>
     </div>
     <div class="hint" id="dbg" style="opacity:.55;font-size:10px;font-variant-numeric:tabular-nums"></div>
+    <div class="hint" id="odbg" style="opacity:.55;font-size:10px;font-variant-numeric:tabular-nums"></div>
   </div>
 </div>
 
@@ -178,7 +179,7 @@ const $=id=>document.getElementById(id);
 let SONG=null, TL=[], idx=0, target='C';
 let mode='wait', beatsPerChord=4, beatsPerBar=4, countInOn=true;
 let clockOn=false, clockT0=0, secPerBeat=0.5, lastBeat=-1, inCountIn=false, metOscs=[], metGain=null;
-let prevFreq=null, emaFlux=0, prevFluxN=0, lastOnset=0, onsets=[], latencyOffset=0;
+let lastOnset=0, onsets=[], latencyOffset=0, rmsBase=null, rmsPrev=0, strumT=null;
 let lastJudgedBeat=-1, beatStats={total:0,played:0,onTime:0};
 let calibrating=false, calOnsets=[], calT0=0, calSPB=0.5;
 
@@ -247,7 +248,7 @@ async function resumeAudio(){try{if(audioCtx&&audioCtx.state!=='running')await a
 async function connectMic(){
   micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
   const src=audioCtx.createMediaStreamSource(micStream);
-  analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0.3;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
+  analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
   micStream.getAudioTracks().forEach(t=>{t.onended=()=>{if(running)connectMic().catch(()=>{});};});
 }
 function watchdog(){if(!running)return;resumeAudio();keepAwake();}
@@ -315,19 +316,17 @@ function tickTempo(){
 }
 
 /* ---------- onset detection + strum-timing grading (Phase 2) ---------- */
-function detectOnset(){
-  if(!freqBuf||!analyser)return;
-  const bins=freqBuf.length, binHz=audioCtx.sampleRate/analyser.fftSize;
-  if(!prevFreq||prevFreq.length!==bins){prevFreq=new Float32Array(bins);prevFreq.set(freqBuf);return;}
-  const kLo=Math.max(1,Math.floor(150/binHz)), kHi=Math.min(bins-1,Math.floor(4000/binHz));
-  let flux=0;for(let k=kLo;k<=kHi;k++){const d=freqBuf[k]-prevFreq[k];if(d>0)flux+=d;}
-  prevFreq.set(freqBuf);
-  const fluxN=flux/Math.max(1,(kHi-kLo)), tNow=audioCtx.currentTime;
-  if(fluxN>emaFlux*1.7+0.6 && fluxN>=prevFluxN && tNow-lastOnset>0.10){
-    lastOnset=tNow;onsets.push(tNow);if(onsets.length>40)onsets.shift();
-    if(calibrating)calOnsets.push(tNow);
+function detectOnset(rms){
+  const tNow=audioCtx.currentTime;
+  if(rmsBase===null){rmsBase=rms;rmsPrev=rms;return;}
+  const rising=rms>=rmsPrev, thr=rmsBase*1.6+0.006;
+  if(rms>thr && rising && rms>0.008 && tNow-lastOnset>0.08){
+    lastOnset=tNow;onsets.push(tNow);if(onsets.length>60)onsets.shift();if(calibrating)calOnsets.push(tNow);
+    const el=$('strum');if(el){el.style.opacity='1';clearTimeout(strumT);strumT=setTimeout(()=>{el.style.opacity='0';},140);}
   }
-  emaFlux=emaFlux*0.9+fluxN*0.1;prevFluxN=fluxN;
+  rmsBase = rms>rmsBase ? rmsBase*0.80+rms*0.20 : rmsBase*0.96+rms*0.04;
+  rmsPrev=rms;
+  const od=$('odbg');if(od)od.textContent='lvl '+rms.toFixed(3)+' · base '+rmsBase.toFixed(3)+' · thr '+thr.toFixed(3)+' · strums '+onsets.length;
 }
 function showVerdict(v){
   const m={on:['ON TIME','var(--good)'],early:['EARLY','var(--warn)'],late:['LATE','#6cb8ff'],miss:['MISS','var(--muted)']};
@@ -391,7 +390,7 @@ function loop(){
   for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
     const lin=Math.pow(10,db/20);const midi=69+12*Math.log2(f/440);const pc=((Math.round(midi)%12)+12)%12;chroma[pc]+=lin;}
   if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
-  detectOnset();
+  detectOnset(rms);
   if(mode==='tempo'&&clockOn&&!calibrating)judgeBeats();
   if(now<celebrateUntil){rafId=requestAnimationFrame(loop);return;}
   const maxc=Math.max(...ema);
