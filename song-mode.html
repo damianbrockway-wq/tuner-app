@@ -149,7 +149,7 @@ const CHORDS={
 };
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
-const CHORDCOS=CFG('pluckChordCos',0.5), ONSETRISE=CFG('pluckOnsetRise',0.003), ONSETMIN=CFG('pluckOnsetMin',0.006);
+const CHORDCOS=CFG('pluckChordCos',0.5), ONSETRISE=CFG('pluckOnsetRise',0.0018), ONSETMIN=CFG('pluckOnsetMin',0.003);
 
 /* ---------- songs (chord-only, simplified arrangements) ---------- */
 const SONGS=[

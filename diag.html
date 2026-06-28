@@ -115,7 +115,7 @@ const $=id=>document.getElementById(id);
 let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null;
 let freqBuf=null,timeBuf=null,ema=null;
 let lastOnset=0,envO=null,envPrev=0,onsetCount=0,strumT=null;
-const ONSETRISE=0.003, ONSETMIN=0.006;
+const ONSETRISE=0.0018, ONSETMIN=0.003;
 let state='idle';
 // capture buffers
 let cap=null;            // chord-test accumulator
@@ -256,9 +256,9 @@ function loop(){
     $('csNext').textContent=(i>=3)?'See result ✓':'Next string →';
   } else if(state==='strumtest'){
     const now=performance.now();
-    $('prompt').textContent='Strum 10 times…  ('+onsetCount+' detected)';
+    $('prompt').innerHTML='Strum now! &nbsp;<b>'+onsetCount+'</b> detected &nbsp;·&nbsp; level '+a.rms.toFixed(3);
     strumStats.peak=Math.max(strumStats.peak,a.rms);
-    if(now-strumStats.t0>9000){finishStrumTest();}
+    if(now-strumStats.t0>12000){finishStrumTest();}
   }
   rafId=requestAnimationFrame(loop);
 }
@@ -285,7 +285,7 @@ function finishChordTest(){
   renderReport();
 }
 
-function startStrumTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
+function startStrumTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;envO=null;envPrev=0;lastOnset=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
 function finishStrumTest(){
   state='live';$('prompt').textContent='Strum test done';
   const n=onsetCount;
