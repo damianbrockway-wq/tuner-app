@@ -64,11 +64,14 @@
     <button id="micBtn">Start mic</button>
     <button class="ghost" id="chordTest">Test chords</button>
     <button class="ghost" id="strumTest">Test strums</button>
+    <button class="ghost" id="checkBtn">Check chord</button>
   </div>
 
   <div class="prompt" id="prompt"></div>
   <div id="chorddiagram" style="text-align:center"></div>
   <div class="row" id="testBtns" style="display:none;justify-content:center;margin-top:8px"><button id="captureBtn">● Capture</button><button class="ghost" id="skipChordBtn">Skip</button></div>
+  <div class="row" id="checkChips" style="display:none;flex-wrap:wrap;justify-content:center;margin-top:8px"></div>
+  <div class="row" id="csBtns" style="display:none;justify-content:center;margin-top:8px"><button id="csNext">Next string →</button></div>
 
   <div class="card" id="resultsCard" style="display:none">
     <div class="lbl">Results</div>
@@ -117,9 +120,11 @@ let strumStats=null;
 
 function cosine(a,b){let d=0,x=0,y=0;for(let i=0;i<12;i++){d+=a[i]*b[i];x+=a[i]*a[i];y+=b[i]*b[i];}return(x&&y)?d/Math.sqrt(x*y):0;}
 let lastDiagChord=null;
-function diagram(ch){
+let csName='',csChord=null,csStr=0,csRang=[false,false,false,false],csLastStr=-1;
+function diagram(ch,hi){
   const W=150,H=178,ml=22,mr=22,top=30,bot=12,strings=4,nF=4;
   const xs=(W-ml-mr)/(strings-1),ys=(H-top-bot)/nF;let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  if(hi!=null){const hx=ml+hi*xs;s+=`<rect x="${hx-9}" y="${top-2}" width="18" height="${H-bot-top}" rx="7" fill="rgba(124,108,255,.3)"/>`;}
   s+=`<rect x="${ml}" y="${top-4}" width="${(strings-1)*xs}" height="5" rx="2" fill="#cfd4ff"/>`;
   for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(strings-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>`;}
   for(let i=0;i<strings;i++){const x=ml+i*xs;s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-bot}" stroke="rgba(255,255,255,.28)" stroke-width="1.5"/>`;}
@@ -130,6 +135,35 @@ function diagram(ch){
     else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="11" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${fg}</text>`;}}
   return s+'</svg>';
 }
+
+// monophonic NSDF pitch detector (same as the tuner) — used for the one-string check
+function pitchDetect(buf,rate){
+  const n=buf.length;let rms=0;for(let i=0;i<n;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/n);
+  if(rms<0.006)return null;
+  const minLag=Math.floor(rate/1300),maxLag=Math.floor(rate/70),nsdf=new Float32Array(maxLag+1);
+  for(let tau=minLag;tau<=maxLag;tau++){let ac=0,m=0;for(let j=0;j+tau<n;j++){ac+=buf[j]*buf[j+tau];m+=buf[j]*buf[j]+buf[j+tau]*buf[j+tau];}nsdf[tau]=m>0?2*ac/m:0;}
+  let tau=minLag;while(tau<maxLag&&nsdf[tau]>0)tau++;
+  let peaks=[],mx=0;while(tau<maxLag){if(nsdf[tau]>0){let pt=tau,pv=nsdf[tau];while(tau<maxLag&&nsdf[tau]>0){if(nsdf[tau]>pv){pv=nsdf[tau];pt=tau;}tau++;}peaks.push([pt,pv]);if(pv>mx)mx=pv;}else tau++;}
+  if(!peaks.length||mx<0.5)return null;const th=mx*0.9;let pt=-1;for(const p of peaks){if(p[1]>=th){pt=p[0];break;}}if(pt<1)return null;
+  const a=nsdf[pt-1],bb=nsdf[pt],cc=nsdf[pt+1],sh=(a-cc)/(2*(a-2*bb+cc)),period=pt+(isFinite(sh)?sh:0),f=rate/period;
+  return (f>60&&f<1300)?f:null;
+}
+const STR_LBL=['g','C','E','A'], STR_BASE=[67,60,64,69];
+function showCheckPicker(){if(!running)return;state='checkpick';$('resultsCard').style.display='none';$('chorddiagram').innerHTML='';$('testBtns').style.display='none';
+  const c=$('checkChips');c.innerHTML='';POOL.forEach(n=>{const b=document.createElement('button');b.className='ghost';b.style.padding='8px 12px';b.textContent=n;b.onclick=()=>startCheck(n);c.appendChild(b);});
+  c.style.display='flex';$('prompt').textContent='Pick a chord, then pluck each string one at a time.';}
+function startCheck(name){csName=name;csChord=CHORDS[name];csStr=0;csRang=[false,false,false,false];csLastStr=-1;state='chordcheck';$('checkChips').style.display='none';$('csBtns').style.display='flex';$('resultsCard').style.display='none';}
+function finishCheck(){
+  state='live';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';csLastStr=-1;$('prompt').textContent='String check done';
+  let html='<div class="lbl">'+csName+' — string-by-string</div><table><tr><th>string</th><th>fret</th><th></th></tr>';const tips=[];
+  for(let i=0;i<4;i++){const ok=csRang[i],fr=csChord.frets[i];
+    html+='<tr><td>'+STR_LBL[i]+'</td><td>'+(fr?fr:'open')+'</td><td class="'+(ok?'ok':'no')+'">'+(ok?'✓ rings':'✗ muted')+'</td></tr>';
+    if(!ok&&fr)tips.push('The <b>'+STR_LBL[i]+'</b> string (fret '+fr+') isn\'t ringing — that finger may be lying flat (use the very tip), not pressing just behind the fret, or it\'s brushing this string. Arch the knuckle.');
+    else if(!ok)tips.push('The open <b>'+STR_LBL[i]+'</b> string isn\'t ringing — another finger is probably touching it. Keep fingers arched on their tips.');}
+  html+='</table>'+(tips.length?'<div class="hint" style="margin-top:8px">'+tips.join('<br><br>')+'</div>':'<div class="hint" style="margin-top:8px;color:var(--good)">All four strings rang — clean chord! 🎉</div>');
+  $('results').innerHTML=html;$('resultsCard').style.display='block';
+}
+
 
 // build chroma bars
 const cbars=[];
@@ -201,6 +235,17 @@ function loop(){
         $('skipChordBtn').textContent='↻ Retry';
       }
     }
+  } else if(state==='chordcheck'){
+    const i=csStr;
+    if(csLastStr!==i){csLastStr=i;$('chorddiagram').innerHTML=diagram(csChord,i);}
+    const expPc=((STR_BASE[i]+csChord.frets[i])%12+12)%12, expName=NOTE[expPc];
+    const f=pitchDetect(timeBuf,audioCtx.sampleRate);
+    let live;
+    if(f){const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;if(pc===expPc)csRang[i]=true;
+      live=csRang[i]?'✓ ringing!':('hearing '+NOTE[pc]+' · need '+expName);}
+    else live=csRang[i]?'✓ ringing!':'(no sound — pluck it / it may be muted)';
+    $('prompt').innerHTML='Pluck the <b>'+STR_LBL[i]+'</b> string'+(csChord.frets[i]?' (fret '+csChord.frets[i]+')':' (open)')+'<br><span style="font-size:15px;color:var(--muted)">'+live+'</span>';
+    $('csNext').textContent=(i>=3)?'See result ✓':'Next string →';
   } else if(state==='strumtest'){
     const now=performance.now();
     $('prompt').textContent='Strum 10 times…  ('+onsetCount+' detected)';
@@ -210,7 +255,7 @@ function loop(){
   rafId=requestAnimationFrame(loop);
 }
 
-function startChordTest(){if(!running)return;state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
+function startChordTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
 function finishChordTest(){
   state='live';$('prompt').textContent='Chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;$('testBtns').style.display='none';
   // recommend cosine threshold
@@ -230,7 +275,7 @@ function finishChordTest(){
   $('results').innerHTML=html;$('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
 }
 
-function startStrumTest(){if(!running)return;$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
+function startStrumTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
 function finishStrumTest(){
   state='live';$('prompt').textContent='Strum test done';
   const n=onsetCount;
@@ -266,6 +311,8 @@ $('skipChordBtn').addEventListener('click',()=>{
 $('micBtn').addEventListener('click',toggleMic);
 $('chordTest').addEventListener('click',startChordTest);
 $('strumTest').addEventListener('click',startStrumTest);
+$('checkBtn').addEventListener('click',showCheckPicker);
+$('csNext').addEventListener('click',()=>{if(state!=='chordcheck')return;csStr++;if(csStr>=4)finishCheck();});
 $('saveBtn').addEventListener('click',save);
 $('copyBtn').addEventListener('click',()=>{$('summary').focus();$('summary').select();});
 </script>
