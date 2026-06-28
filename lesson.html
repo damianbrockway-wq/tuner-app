@@ -117,14 +117,25 @@ const LESSONS={
   {type:'metro', chord:'F', count:6, beats:8, bpm:80, step:'Step 3 · Strum in time', title:'Strum on the beat', body:"Hold F. A steady click plays — strum down on each click. Keeping time matters more than speed. Tap ♪ Beat to hear it again."},
   {type:'seq', seq:['C','C','Am','Am','F','F','C','C'], step:'Step 4 · Three-chord song', title:'Play C – Am – F', body:"Two bars each of C, Am, F, back to C. Strum each chord. This progression is in a thousand songs!"},
   {type:'done', step:'Done', title:'🎉 Lesson 2 complete!', body:"You learned F, drilled the change, and strummed in time. Next: the G chord and the island strum. Great work."}
+ ],
+ 3:[
+  {type:'info', step:'Lesson 3', title:'The G chord & island strum', body:"You'll learn G — your first three-finger chord — and the island strum, the rhythm behind a huge number of ukulele songs."},
+  {type:'chord', chord:'G', step:'Step 1 · New chord', title:'This is G', body:"Index on the C string 2nd fret, middle on the A string 2nd fret, ring on the E string 3rd fret — a little triangle. Strum and listen for G."},
+  {type:'seq', seq:['C','G','C','G'], step:'Step 2 · C ↔ G change', title:'Switch C ↔ G', body:"All three fingers move together. Get the triangle shape, then strum. It advances when it hears the right chord."},
+  {type:'metro', chord:'C', bpm:70, beats:8, pattern:'island', step:'Step 3 · The island strum', title:'D · D U · U D U', body:"Hold C and follow the arrows with the beat: down, down-up, up-down-up. Strum along — no grading, just feel it. Tap ♪ Beat to hear it again."},
+  {type:'seq', seq:['C','G','Am','F'], step:'Step 4 · Four-chord song', title:'C · G · Am · F', body:"The famous four-chord loop — hundreds of songs use it. Play each chord; add the island strum if you can."},
+  {type:'done', step:'Done', title:'🎉 Lesson 3 complete!', body:"You learned G and the island strum, and played the four-chord loop. You now know C, Am, F and G — a whole songbook's worth. Amazing work."}
  ]
 };
-const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n===2)?2:1;})();
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=3)?n:1;})();
 const STEPS=LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;
 
 /* ---------- diagram ---------- */
+const PAT={island:['D','','D','U','','U','D','U']};
+function patternHTML(name){const p=PAT[name];if(!p)return '';
+  return '<div style="display:flex;gap:5px;justify-content:center;margin-top:6px">'+p.map(s=>'<div style="width:26px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+(s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)')+'">'+(s==='D'?'↓':s==='U'?'↑':'·')+'</div>').join('')+'</div>';}
 function diagram(ch){
   const W=150,H=176,ml=22,mr=22,top=30,bot=12,strings=4,nF=4;
   const xs=(W-ml-mr)/(strings-1),ys=(H-top-bot)/nF;let s=`<svg class="diagram" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
@@ -163,6 +174,7 @@ function renderStep(){
     $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
   } else if(step.type==='metro'){
     $('diagram').innerHTML=diagram(CHORDS[step.chord]);
+    if(step.pattern)$('notes').innerHTML=patternHTML(step.pattern);
     $('state').textContent='strum along with the beat 🥁';
     $('replay').style.display='';
     $('go').textContent='Got it →'; $('go').disabled=false;
