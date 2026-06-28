@@ -97,6 +97,9 @@ const CHORDCOS=CFG('pluckChordCos',0.5);
 let ON={rise:0.0008,floor:0.0015,ratio:2.0,refract:0.18};
 function loadOnsetCfg(){ON={rise:CFG('pluckOnRise',0.0008),floor:CFG('pluckOnFloor',0.0015),ratio:CFG('pluckOnRatio',2.0),refract:CFG('pluckOnRefract',0.18)};}
 loadOnsetCfg();
+const Skill={load(){try{return JSON.parse(localStorage.getItem('pluckSkill')||'{}');}catch(e){return{};}},save(m){try{localStorage.setItem('pluckSkill',JSON.stringify(m));}catch(e){}},
+ recordChord(n){const m=this.load();m.chords=m.chords||{};const c=m.chords[n]||{passes:0};c.passes++;c.lastSeen=Date.now();m.chords[n]=c;this.save(m);},
+ recordChange(a,b){if(!a||!b||a===b)return;const m=this.load();m.changes=m.changes||{};const k=[a,b].sort().join('>');const c=m.changes[k]||{bestCPM:0,attempts:0};c.attempts++;c.lastSeen=Date.now();m.changes[k]=c;this.save(m);}};
 const $=id=>document.getElementById(id);
 
 const LESSONS={
@@ -336,8 +339,8 @@ function loop(){
     else{matchHold=Math.max(0,matchHold-dt*0.5);$('state').textContent=(bestS>0.55&&best!==target)?('sounds like '+best):'play '+target+'…';}
     if(matchHold>0.3){
       matchHold=0;
-      if(step.type==='chord'){celebrateUntil=now+700;advanceStep();}
-      else{ [...$('chart').children][seqPos].classList.add('done'); seqPos++; celebrate();
+      if(step.type==='chord'){Skill.recordChord(step.chord);celebrateUntil=now+700;advanceStep();}
+      else{ Skill.recordChord(step.seq[seqPos]); if(seqPos>0)Skill.recordChange(step.seq[seqPos-1],step.seq[seqPos]); [...$('chart').children][seqPos].classList.add('done'); seqPos++; celebrate();
         if(seqPos>=step.seq.length){celebrateUntil=now+700;advanceStep();}
         else{celebrateUntil=now+550;setSeqTarget();} }
     } else maybeSkip();

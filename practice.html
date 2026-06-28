@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pluck · Practice</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#08060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pluck">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{--bg:#08060f;--txt:#eef1ff;--muted:#9aa0c8;--accent:#7c6cff;--good:#27e0a0;--warn:#ffc23d}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--txt);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 14px);-webkit-user-select:none;user-select:none}
+  .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.45}
+  .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
+  .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}
+  .b2{width:45vmax;height:45vmax;background:#16d6a2;right:-10%;bottom:0}
+  .wrap{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:12px;margin:auto 0}
+  .top{width:100%;display:flex;align-items:center;justify-content:space-between}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
+  .brand{font-size:15px;font-weight:700}.brand b{color:#9d8bff}
+  .sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.5;max-width:340px}
+  .pair{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+  .ch{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .ch .nm{font-size:24px;font-weight:800}
+  .ch.active .nm{color:var(--good);text-shadow:0 0 16px var(--good)}
+  .ch.active svg{filter:drop-shadow(0 0 8px rgba(39,224,160,.5))}
+  .arrow{font-size:26px;color:var(--muted);align-self:center;margin-top:50px}
+  .big{font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .timer{font-size:18px;font-weight:800;color:var(--warn);font-variant-numeric:tabular-nums}
+  .lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .best{font-size:13px;color:var(--muted)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+  button.primary{padding:14px 26px;border:0;border-radius:16px;cursor:pointer;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c6cff,#5b8cff);box-shadow:0 10px 26px rgba(124,108,255,.5)}
+  button.ghost{padding:11px 16px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .chips button{min-width:42px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--txt);font-weight:800;font-size:14px;cursor:pointer}
+  .chips button.on{background:linear-gradient(90deg,#7c6cff,#5b8cff);color:#fff;border-color:transparent}
+  .state{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;height:18px;opacity:.85}
+  .flash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 42%,rgba(39,224,160,.45),transparent 60%)}
+  .flash.go{animation:flash .5s ease-out}@keyframes flash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="flash" id="flash"></div>
+<div class="wrap">
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">🎯 <b>PRACTICE</b></div><span style="width:40px"></span></div>
+
+  <!-- setup -->
+  <div id="setup" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+    <div class="lbl">One-minute changes</div>
+    <div class="sub" id="intro">Switch between two chords as many times as you can in 60 seconds. The app picks your weakest pair — beat your record.</div>
+    <div class="pair" id="pairView"></div>
+    <div class="best" id="best"></div>
+    <div class="row"><button class="primary" id="startBtn">Start 60s drill</button><button class="ghost" id="diffBtn">Different pair</button></div>
+    <div class="lbl" style="margin-top:6px">Pick your two chords</div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <!-- drill -->
+  <div id="drill" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
+    <div class="timer" id="timer">0:60</div>
+    <div class="pair" id="drillPair"></div>
+    <div class="lbl">Changes</div>
+    <div class="big" id="count">0</div>
+    <div class="state" id="state">play the highlighted chord</div>
+    <button class="ghost" id="stopBtn">Stop</button>
+  </div>
+
+  <!-- result -->
+  <div id="result" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
+    <div class="lbl">Result</div>
+    <div class="big" id="rcount">0</div>
+    <div class="sub">changes per minute</div>
+    <div class="best" id="rbest"></div>
+    <div class="sub" id="rmsg"></div>
+    <div class="row"><button class="primary" id="againBtn">Again</button><button class="ghost" id="backBtn">Pick another</button></div>
+  </div>
+</div>
+
+<script>
+const CHORDS={
+  'C' :{frets:[0,0,0,3],fingers:[0,0,0,3],pcs:[0,4,7]},'Am':{frets:[2,0,0,0],fingers:[2,0,0,0],pcs:[9,0,4]},
+  'F' :{frets:[2,0,1,0],fingers:[2,0,1,0],pcs:[5,9,0]},'G':{frets:[0,2,3,2],fingers:[0,1,3,2],pcs:[7,11,2]},
+  'Dm':{frets:[2,2,1,0],fingers:[2,3,1,0],pcs:[2,5,9]},'Em':{frets:[0,4,3,2],fingers:[0,3,2,1],pcs:[4,7,11]},
+  'C7':{frets:[0,0,0,1],fingers:[0,0,0,1],pcs:[0,4,7,10]},'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5]},
+  'D':{frets:[2,2,2,0],fingers:[1,2,3,0],pcs:[2,6,9]},'A':{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4]}
+};
+const POOL=Object.keys(CHORDS);
+const $=id=>document.getElementById(id);
+const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
+const CHORDCOS=CFG('pluckChordCos',0.5);
+let ON={rise:0.0008,floor:0.0015,ratio:2.0,refract:0.18};
+
+/* ---------- skill model ---------- */
+const Skill={
+  load(){try{return JSON.parse(localStorage.getItem('pluckSkill')||'{}');}catch(e){return {};}},
+  save(m){try{localStorage.setItem('pluckSkill',JSON.stringify(m));}catch(e){}},
+  changeKey(a,b){return [a,b].sort().join('>');},
+  best(a,b){const m=this.load();const c=(m.changes||{})[this.changeKey(a,b)];return c?c.bestCPM:0;},
+  recordChange(a,b,cpm){const m=this.load();m.changes=m.changes||{};const k=this.changeKey(a,b);const c=m.changes[k]||{bestCPM:0,attempts:0};c.attempts++;c.lastSeen=Date.now();if(cpm>(c.bestCPM||0))c.bestCPM=cpm;m.changes[k]=c;this.save(m);},
+  lastSeen(a,b){const m=this.load();const c=(m.changes||{})[this.changeKey(a,b)];return c?(c.lastSeen||0):0;}
+};
+const LMAP={1:['C','Am'],2:['F'],3:['G'],4:['Dm']};
+function learnedChords(){let o=[];for(let i=1;i<=4;i++){if(localStorage.getItem('pluckLesson'+i)==='done')o=o.concat(LMAP[i]);}o=[...new Set(o)];return o.length>=2?o:['C','Am'];}
+function allPairs(chords){const p=[];for(let i=0;i<chords.length;i++)for(let j=i+1;j<chords.length;j++)p.push([chords[i],chords[j]]);return p;}
+function weakestPair(){const ch=learnedChords();const pairs=allPairs(ch);
+  pairs.sort((x,y)=>{const bx=Skill.best(...x),by=Skill.best(...y);if(bx!==by)return bx-by;return Skill.lastSeen(...x)-Skill.lastSeen(...y);});
+  return pairs[0]||['C','Am'];}
+
+/* ---------- diagram ---------- */
+function diagram(ch,sz){sz=sz||1;const W=110*sz,H=130*sz,ml=16*sz,mr=16*sz,top=22*sz,bot=10*sz,st=4,nF=4;
+  const xs=(W-ml-mr)/(st-1),ys=(H-top-bot)/nF;let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  s+=`<rect x="${ml}" y="${top-3*sz}" width="${(st-1)*xs}" height="${4*sz}" rx="2" fill="#cfd4ff"/>`;
+  for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(st-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="${1.3*sz}"/>`;}
+  for(let i=0;i<st;i++){const x=ml+i*xs;s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-bot}" stroke="rgba(255,255,255,.28)" stroke-width="${1.3*sz}"/>`;}
+  for(let i=0;i<st;i++){const x=ml+i*xs,fr=ch.frets[i],fg=ch.fingers[i];
+    if(fr===0){s+=`<circle cx="${x}" cy="${top-11*sz}" r="${4.5*sz}" fill="none" stroke="#9aa0c8" stroke-width="${1.4*sz}"/>`;}
+    else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="${9*sz}" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4*sz}" text-anchor="middle" font-size="${10*sz}" font-weight="700" fill="#fff">${fg}</text>`;}}
+  return s+'</svg>';}
+function pairHTML(a,b,activeName,el){
+  el.innerHTML='<div class="ch'+(activeName===a?' active':'')+'"><div class="nm">'+a+'</div>'+diagram(CHORDS[a])+'</div>'+
+    '<div class="arrow">⇄</div>'+
+    '<div class="ch'+(activeName===b?' active':'')+'"><div class="nm">'+b+'</div>'+diagram(CHORDS[b])+'</div>';
+}
+
+/* ---------- setup view ---------- */
+let A='C',B='Am';
+function showSetup(){
+  $('setup').style.display='flex';$('drill').style.display='none';$('result').style.display='none';
+  pairHTML(A,B,null,$('pairView'));
+  $('best').textContent='Your best: '+(Skill.best(A,B)||'—')+' changes/min';
+  const ch=learnedChords();const cc=$('chips');cc.innerHTML='';let sel=[A,B];
+  ch.forEach(c=>{const b=document.createElement('button');b.textContent=c;if(sel.includes(c))b.classList.add('on');
+    b.onclick=()=>{ if(sel.includes(c)){sel=sel.filter(x=>x!==c);} else { sel.push(c); if(sel.length>2)sel.shift(); }
+      if(sel.length===2){A=sel[0];B=sel[1];} showSetup(); };
+    cc.appendChild(b);});
+  if(learnedChords().length<2 || (learnedChords().length===2 && learnedChords().join()==='C,Am' && !localStorage.getItem('pluckLesson1')))
+    $('intro').innerHTML='Tip: finish <b>Lesson 1</b> to unlock more chords. For now, drill C ⇄ Am.';
+}
+
+/* ---------- the drill ---------- */
+let running=false,count=0,target='',lastConfirmed=null,matchHold=0,tEnd=0,lastT=performance.now();
+function startDrill(){
+  $('setup').style.display='none';$('result').style.display='none';$('drill').style.display='flex';
+  count=0;lastConfirmed=null;matchHold=0;target=A;
+  $('count').textContent='0';pairHTML(A,B,target,$('drillPair'));$('state').textContent='play '+target;
+  tEnd=performance.now()+60000;
+  ensureMic();
+  tick();
+}
+function tick(){
+  const left=Math.max(0,Math.ceil((tEnd-performance.now())/1000));
+  $('timer').textContent='0:'+(left<10?'0':'')+left;
+  if(left<=0){finishDrill();return;}
+  if(running)setTimeout(tick,200);
+}
+function confirmChord(name){
+  // a confirmed chord that differs from the last one = one change
+  if(name!==lastConfirmed){
+    if(lastConfirmed!==null){count++;$('count').textContent=count;$('flash').classList.remove('go');void $('flash').offsetWidth;$('flash').classList.add('go');if(navigator.vibrate)navigator.vibrate(12);}
+    lastConfirmed=name;
+    target = (name===A)?B:A;
+    pairHTML(A,B,target,$('drillPair'));$('state').textContent='play '+target;
+  }
+}
+function finishDrill(){
+  running=false;stopMic();
+  Skill.recordChange(A,B,count);
+  $('drill').style.display='none';$('result').style.display='flex';
+  $('rcount').textContent=count;
+  const best=Skill.best(A,B);
+  $('rbest').textContent='Best: '+best+' changes/min';
+  let msg;
+  if(count>=60)msg="Fluent! That change is solid. 🎉";
+  else if(count>=30)msg="Great — that's the 'ready to use it in songs' level.";
+  else if(count>=15)msg="Good progress. Aim for 30 next time.";
+  else msg="Keep at it — speed comes with reps. Slow and clean first.";
+  $('rmsg').textContent=msg;
+}
+
+/* ---------- audio (chord detection, auto-resume) ---------- */
+let audioCtx=null,analyser=null,micStream=null,rafId=null,wakeLock=null,watchTimer=null;
+let freqBuf=null,timeBuf=null,ema=null;
+function cosine(a,b){let d=0,na=0,nb=0;for(let i=0;i<12;i++){d+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i];}return(na&&nb)?d/Math.sqrt(na*nb):0;}
+function template(name){const t=new Array(12).fill(0);CHORDS[name].pcs.forEach(p=>t[p]=1);return t;}
+const TPL={};POOL.forEach(n=>TPL[n]=template(n));
+async function keepAwake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible'&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}}catch(e){}}
+async function ensureMic(){
+  if(running)return;
+  try{
+    if(audioCtx){try{await audioCtx.close();}catch(e){}audioCtx=null;}
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx.onstatechange=()=>{if(running&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});};
+    await audioCtx.resume();
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
+    const src=audioCtx.createMediaStreamSource(micStream);
+    analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
+    running=true;ema=null;keepAwake();
+    if(!watchTimer)watchTimer=setInterval(()=>{if(running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});keepAwake();},1200);
+    loop();
+  }catch(e){$('state').textContent='mic blocked';}
+}
+function stopMic(){running=false;cancelAnimationFrame(rafId);if(watchTimer){clearInterval(watchTimer);watchTimer=null;}try{if(wakeLock){wakeLock.release();wakeLock=null;}}catch(e){}if(micStream)micStream.getTracks().forEach(t=>t.stop());}
+function loop(){
+  if(running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});
+  const now=performance.now();let dt=(now-lastT)/1000;lastT=now;if(dt>0.1)dt=0.1;
+  if(!running||!analyser){return;}
+  const bins=analyser.frequencyBinCount;
+  if(!freqBuf||freqBuf.length!==bins)freqBuf=new Float32Array(bins);
+  analyser.getFloatFrequencyData(freqBuf);
+  const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);
+  for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
+    const lin=Math.pow(10,db/20);const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;chroma[pc]+=lin;}
+  if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
+  const maxc=Math.max(...ema);
+  if(maxc>0){
+    // which of A/B best matches, and is it good?
+    const sa=cosine(ema,TPL[A]),sb=cosine(ema,TPL[B]);
+    const det = sa>=sb ? A : B; const sDet=Math.max(sa,sb);
+    // global argmax to reject wrong chords
+    let best=det,bestS=-1;for(const n of POOL){const sc=cosine(ema,TPL[n]);if(sc>bestS){bestS=sc;best=n;}}
+    const good = sDet>CHORDCOS && (best===det||sDet>=bestS-0.07);
+    if(good && det===target){ matchHold+=dt; if(matchHold>0.22){matchHold=0;confirmChord(det);} }
+    else if(good && det===lastConfirmed){ matchHold=0; } // still holding current, fine
+    else matchHold=Math.max(0,matchHold-dt*0.5);
+  }
+  rafId=requestAnimationFrame(loop);
+}
+
+/* ---------- wiring ---------- */
+[A,B]=weakestPair();
+$('startBtn').addEventListener('click',startDrill);
+$('diffBtn').addEventListener('click',()=>{const ch=learnedChords();const pairs=allPairs(ch);if(pairs.length){const idx=(pairs.findIndex(p=>Skill.changeKey(...p)===Skill.changeKey(A,B))+1)%pairs.length;[A,B]=pairs[idx];showSetup();}});
+$('stopBtn').addEventListener('click',finishDrill);
+$('againBtn').addEventListener('click',startDrill);
+$('backBtn').addEventListener('click',()=>{showSetup();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
+showSetup();
+</script>
+</body>
+</html>
