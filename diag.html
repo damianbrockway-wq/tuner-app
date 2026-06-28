@@ -126,6 +126,7 @@ let strumStats=null;
 
 function cosine(a,b){let d=0,x=0,y=0;for(let i=0;i<12;i++){d+=a[i]*b[i];x+=a[i]*a[i];y+=b[i]*b[i];}return(x&&y)?d/Math.sqrt(x*y):0;}
 let lastDiagChord=null;
+let noAudioT=0;
 let sawSignal=false;
 let csName='',csChord=null,csStr=0,csRang=[false,false,false,false],csLastStr=-1;
 function diagram(ch,hi){
@@ -181,12 +182,15 @@ NOTE.forEach(n=>{const b=document.createElement('div');b.className='b';b.innerHT
 async function toggleMic(){
   if(running){stop();return;}
   try{
-    if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();audioCtx.onstatechange=()=>{if(running&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});};}
-    if(audioCtx.state!=='running')await audioCtx.resume();
+    if(micStream){try{micStream.getTracks().forEach(t=>t.stop());}catch(e){}}
+    if(audioCtx){try{await audioCtx.close();}catch(e){} audioCtx=null;}
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx.onstatechange=()=>{if(running&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});};
+    await audioCtx.resume();
     micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
     const src=audioCtx.createMediaStreamSource(micStream);
     analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
-    running=true;state='live';envO=null;ema=null;onsetCount=0;sawSignal=false;renderReport();
+    running=true;state='live';envO=null;ema=null;onsetCount=0;sawSignal=false;noAudioT=performance.now();renderReport();
     $('micBtn').textContent='Stop mic';$('micBtn').classList.add('live');
     loop();
   }catch(e){$('prompt').textContent='mic blocked';}
@@ -223,6 +227,7 @@ function loop(){
   cbars.forEach((b,i)=>{b.style.height=Math.max(2,a.chroma[i]/maxc*52)+'px';b.classList.toggle('lit',a.chroma[i]>0.45*maxc);});
   let best='—',bestS=0;for(const n of POOL){const s=cosine(a.chroma,TPL[n]);if(s>bestS){bestS=s;best=n;}}
   $('best').textContent=a.rms<0.01?'—':best;$('bestpct').textContent=a.rms<0.01?'':Math.round(bestS*100)+'%';
+  if(state==='live'){ if(!sawSignal && performance.now()-noAudioT>2500){ $('prompt').innerHTML='⚠️ No sound reaching the app. Tap <b>Stop mic</b> then <b>Start mic</b>; close other Pluck tabs; check Settings → mic permission.'; } else if(sawSignal && $('prompt').innerHTML.indexOf('No sound')>=0){ $('prompt').textContent=''; } }
   if(a.onset){$('odot').classList.add('on');clearTimeout(strumT);strumT=setTimeout(()=>$('odot').classList.remove('on'),130);}
   $('ocount').textContent=onsetCount+' strums';
   $('onsetdbg').textContent='rms '+a.rms.toFixed(3)+' · env '+a.env.toFixed(3)+' · rise '+a.rise.toFixed(4);
