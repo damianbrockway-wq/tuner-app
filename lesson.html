@@ -62,7 +62,7 @@
 <div class="pop" id="pop">✅</div>
 
 <div class="wrap">
-  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">📚 <b>LESSON 1</b></div><span style="width:40px"></span></div>
+  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">📚 <b id="lnum">LESSON 1</b></div><span style="width:40px"></span></div>
   <div class="pbar"><i id="pbar"></i></div>
   <div class="step" id="stepn"></div>
   <div class="title" id="title">—</div>
@@ -75,6 +75,7 @@
   <div class="state" id="state"></div>
   <div class="row">
     <button class="primary" id="go">Begin</button>
+    <button class="ghost" id="replay" style="display:none">♪ Beat</button>
     <button class="ghost" id="skip" style="display:none">Skip ⏭</button>
   </div>
 </div>
@@ -95,7 +96,8 @@ const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:
 const CHORDCOS=CFG('pluckChordCos',0.5);
 const $=id=>document.getElementById(id);
 
-const STEPS=[
+const LESSONS={
+ 1:[
   {type:'info', step:'Lesson 1', title:'Play your first song', body:"In a few minutes you'll tune up, learn two chords — C and Am — and play a real little song. Go at your own pace; nothing is timed."},
   {type:'tune', step:'Step 1 · Tune', title:'Get in tune first', body:"A ukulele only sounds good in tune. Open the Tuner, get all four strings to say IN TUNE, then come back and tap Continue."},
   {type:'chord', chord:'C', step:'Step 2 · First chord', title:'This is C', body:"Ring finger on the A string (closest to the floor), 3rd fret. Strum all four strings down with your thumb. We'll listen for a clean C."},
@@ -103,8 +105,19 @@ const STEPS=[
   {type:'chord', chord:'Am', step:'Step 4 · Second chord', title:'This is Am', body:"Middle finger on the g string (closest to the ceiling), 2nd fret. Just one finger! Strum down — listen for Am."},
   {type:'seq', seq:['C','Am','C','Am'], step:'Step 5 · The change', title:'Switch C ↔ Am', body:"The hard part is the change. Get the shape, then strum. It moves on each time it hears the right chord — take your time."},
   {type:'seq', seq:['C','C','Am','Am','C','C','Am','Am'], step:'Step 6 · Your first song', title:'Play along', body:"Two bars of C, two of Am, and repeat. Strum each chord. You're playing music!"},
-  {type:'done', step:'Done', title:'🎉 Lesson 1 complete!', body:"You tuned up, learned C and Am, and played a song. Next lesson adds the F chord and a steady strum pattern. Nice work."}
-];
+  {type:'done', step:'Done', title:'🎉 Lesson 1 complete!', body:"You tuned up, learned C and Am, and played a song. Next lesson adds the F chord and a steady strum. Nice work."}
+ ],
+ 2:[
+  {type:'info', step:'Lesson 2', title:'The F chord & strumming', body:"You'll learn the F chord, drill the tricky C↔F change, strum to a steady beat, then play a three-chord song with C, Am and F."},
+  {type:'chord', chord:'F', step:'Step 1 · New chord', title:'This is F', body:"Index finger on the E string, 1st fret. Middle finger on the g string, 2nd fret. Two fingers — strum down and listen for F."},
+  {type:'seq', seq:['C','F','C','F'], step:'Step 2 · C ↔ F change', title:'Switch C ↔ F', body:"F is trickier. Get both fingers down cleanly, then strum. It advances each time it hears the right chord."},
+  {type:'metro', chord:'F', count:6, beats:8, bpm:80, step:'Step 3 · Strum in time', title:'Strum on the beat', body:"Hold F. A steady click plays — strum down on each click. Keeping time matters more than speed. Tap ♪ Beat to hear it again."},
+  {type:'seq', seq:['C','C','Am','Am','F','F','C','C'], step:'Step 4 · Three-chord song', title:'Play C – Am – F', body:"Two bars each of C, Am, F, back to C. Strum each chord. This progression is in a thousand songs!"},
+  {type:'done', step:'Done', title:'🎉 Lesson 2 complete!', body:"You learned F, drilled the change, and strummed in time. Next: the G chord and the island strum. Great work."}
+ ]
+};
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n===2)?2:1;})();
+const STEPS=LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;
 
@@ -134,7 +147,7 @@ function renderStep(){
   // reset display blocks
   $('diagram').innerHTML=''; $('notes').innerHTML=''; $('chart').innerHTML='';
   $('name').style.display='none'; $('count').style.display='none';
-  $('skip').style.display='none';
+  $('skip').style.display='none'; $('replay').style.display='none';
   seqPos=0; strumCount=0; matchHold=0; celebrateUntil=0; stepStart=performance.now();
 
   if(step.type==='chord'){
@@ -145,6 +158,13 @@ function renderStep(){
     $('diagram').innerHTML=diagram(CHORDS[step.chord]);
     $('count').style.display='block'; $('count').textContent='0 / '+step.count;
     $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
+  } else if(step.type==='metro'){
+    $('diagram').innerHTML=diagram(CHORDS[step.chord]);
+    $('state').textContent='strum along with the beat 🥁';
+    $('replay').style.display='';
+    $('go').textContent='Got it →'; $('go').disabled=false;
+    ensureMic();
+    if(running)startMetro(step); else pendingMetro=step;
   } else if(step.type==='seq'){
     buildChart(); setSeqTarget();
     $('diagram').innerHTML=diagram(CHORDS[step.seq[0]]);
@@ -170,11 +190,12 @@ let stepStart=0;
 function celebrate(){chime();if(navigator.vibrate)navigator.vibrate([16,40,16]);
   $('flash').classList.remove('go');void $('flash').offsetWidth;$('flash').classList.add('go');
   $('pop').classList.remove('go');void $('pop').offsetWidth;$('pop').classList.add('go');}
-function advanceStep(){ celebrate(); si++; if(si>=STEPS.length){return;} renderStep(); }
+function advanceStep(){ stopMetro(); celebrate(); si++; if(si>=STEPS.length){return;} renderStep(); }
 
 /* ---------- audio (chromagram + onset), auto-resume / fresh-context ---------- */
 let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null,wakeLock=null,watchTimer=null;
 let freqBuf=null,timeBuf=null,ema=null,lastOnset=0,envO=null,envPrev=0,slowEnvO=null,strumT=null;
+let metGain=null,metOscs=[],pendingMetro=null;
 function ensureCtx(){if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();audioCtx.onstatechange=()=>{if(running&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});};}return audioCtx;}
 async function keepAwake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible'&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}}catch(e){}}
 async function ensureMic(){
@@ -189,10 +210,20 @@ async function ensureMic(){
     analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
     micStream.getAudioTracks().forEach(t=>{t.onended=()=>{if(running){running=false;ensureMic();}};});
     running=true;ema=null;envO=null;keepAwake();
+    if(pendingMetro){const s=pendingMetro;pendingMetro=null;startMetro(s);}
     if(!watchTimer)watchTimer=setInterval(()=>{if(running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});keepAwake();},1200);
     loop();
   }catch(e){$('state').textContent='mic blocked — allow microphone';}
 }
+function startMetro(s){
+  stopMetro(); if(!audioCtx)return; const ctx=audioCtx, spb=60/s.bpm, ci=4, t0=ctx.currentTime+0.25;
+  metGain=ctx.createGain();metGain.connect(ctx.destination);metOscs=[];
+  for(let i=0;i<ci+s.beats;i++){const t=t0+i*spb, accent=(((i-ci)%4)+4)%4===0;
+    const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=accent?1600:1050;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.16:0.09,t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
+    o.connect(g).connect(metGain);o.start(t);o.stop(t+0.09);metOscs.push(o);}
+}
+function stopMetro(){metOscs.forEach(o=>{try{o.stop()}catch(e){}});metOscs=[];if(metGain){try{metGain.disconnect()}catch(e){}metGain=null;}}
 function chime(){
   const ctx=ensureCtx();if(ctx.state!=='running')ctx.resume();const now=ctx.currentTime;
   [523.25,659.25,783.99,1046.50].forEach((f,i)=>{const t=now+i*0.085;
@@ -262,14 +293,16 @@ function getCss(v){return getComputedStyle(document.documentElement).getProperty
 
 /* ---------- buttons ---------- */
 $('go').addEventListener('click',()=>{
-  if(step && (step.type==='info'||step.type==='tune'||step.type==='done')){
-    if(step.type==='done'){ try{localStorage.setItem('pluckLesson1','done');}catch(e){} location.href='index.html'; return; }
-    si++; renderStep();
+  if(step && (step.type==='info'||step.type==='tune'||step.type==='done'||step.type==='metro')){
+    if(step.type==='done'){ try{localStorage.setItem('pluckLesson'+LNUM,'done');}catch(e){} location.href='lessons.html'; return; }
+    stopMetro(); si++; renderStep();
   }
 });
 $('skip').addEventListener('click',()=>{ if(step&&step.type==='seq'&&seqPos<step.seq.length-1){[...$('chart').children][seqPos].classList.add('done');seqPos++;setSeqTarget();$('skip').style.display='none';stepStart=performance.now();} else {celebrateUntil=performance.now()+300;advanceStep();} });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
+$('replay').addEventListener('click',()=>{if(step&&step.type==='metro'){strumCount=0;$('count').textContent='0 / '+step.count;startMetro(step);}});
+$('lnum').textContent='LESSON '+LNUM;
 renderStep();
 </script>
 </body>
