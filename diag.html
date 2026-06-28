@@ -35,6 +35,7 @@
   button{padding:11px 16px;border:0;border-radius:13px;font-size:14px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(90deg,#7c6cff,#5b8cff)}
   button.ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:var(--muted)}
   button.live{background:linear-gradient(90deg,#ff5d73,#ff7a4d)}
+  button.ghost.active{background:linear-gradient(90deg,#7c6cff,#5b8cff);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(124,108,255,.45)}
   .prompt{font-size:22px;font-weight:800;text-align:center;min-height:28px}
   table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
   th,td{text-align:left;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.08);font-variant-numeric:tabular-nums}
@@ -115,7 +116,7 @@ const $=id=>document.getElementById(id);
 let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null;
 let freqBuf=null,timeBuf=null,ema=null;
 let lastOnset=0,envO=null,envPrev=0,onsetCount=0,strumT=null;
-const ONSETRISE=0.0018, ONSETMIN=0.003;
+const ONSETRISE=0.0009, ONSETMIN=0.0015;
 let state='idle';
 // capture buffers
 let cap=null;            // chord-test accumulator
@@ -155,12 +156,12 @@ function pitchDetect(buf,rate){
   return (f>60&&f<1300)?f:null;
 }
 const STR_LBL=['g','C','E','A'], STR_BASE=[67,60,64,69];
-function showCheckPicker(){if(!running)return;state='checkpick';$('resultsCard').style.display='none';$('chorddiagram').innerHTML='';$('testBtns').style.display='none';
+function showCheckPicker(){if(!running)return;setActive('checkBtn');state='checkpick';$('resultsCard').style.display='none';$('chorddiagram').innerHTML='';$('testBtns').style.display='none';
   const c=$('checkChips');c.innerHTML='';POOL.forEach(n=>{const b=document.createElement('button');b.className='ghost';b.style.padding='8px 12px';b.textContent=n;b.onclick=()=>startCheck(n);c.appendChild(b);});
   c.style.display='flex';$('prompt').textContent='Pick a chord, then pluck each string one at a time.';}
 function startCheck(name){csName=name;csChord=CHORDS[name];csStr=0;csRang=[false,false,false,false];csLastStr=-1;state='chordcheck';$('checkChips').style.display='none';$('csBtns').style.display='flex';$('resultsCard').style.display='none';}
 function finishCheck(){
-  state='live';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';csLastStr=-1;$('prompt').textContent='String check done';
+  setActive('');state='live';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';csLastStr=-1;$('prompt').textContent='String check done';
   let html='<div class="lbl">'+csName+' — string-by-string</div><table><tr><th>string</th><th>fret</th><th></th></tr>';const tips=[];
   for(let i=0;i<4;i++){const ok=csRang[i],fr=csChord.frets[i];
     html+='<tr><td>'+STR_LBL[i]+'</td><td>'+(fr?fr:'open')+'</td><td class="'+(ok?'ok':'no')+'">'+(ok?'✓ rings':'✗ muted')+'</td></tr>';
@@ -190,7 +191,7 @@ async function toggleMic(){
     loop();
   }catch(e){$('prompt').textContent='mic blocked';}
 }
-function stop(){running=false;cancelAnimationFrame(rafId);if(micStream)micStream.getTracks().forEach(t=>t.stop());$('micBtn').textContent='Start mic';$('micBtn').classList.remove('live');state='idle';}
+function stop(){setActive('');running=false;cancelAnimationFrame(rafId);if(micStream)micStream.getTracks().forEach(t=>t.stop());$('micBtn').textContent='Start mic';$('micBtn').classList.remove('live');state='idle';}
 
 function analyze(){
   const bins=analyser.frequencyBinCount;
@@ -263,9 +264,10 @@ function loop(){
   rafId=requestAnimationFrame(loop);
 }
 
-function startChordTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
+function setActive(which){['chordTest','strumTest','checkBtn'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('active',id===which);});}
+function startChordTest(){if(!running)return;setActive('chordTest');$('checkChips').style.display='none';$('csBtns').style.display='none';state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
 function finishChordTest(){
-  state='live';$('prompt').textContent='Chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;$('testBtns').style.display='none';
+  setActive('');state='live';$('prompt').textContent='Chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;$('testBtns').style.display='none';
   // recommend cosine threshold
   const good=chordResults.filter(r=>!r.nosig&&r.argmaxPct>=70&&r.avgCos>=0.55);
   let rec= good.length? Math.max(0.45, Math.min(...good.map(r=>r.avgCos))*0.8) : 0.5;
@@ -285,13 +287,13 @@ function finishChordTest(){
   renderReport();
 }
 
-function startStrumTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;envO=null;envPrev=0;lastOnset=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
+function startStrumTest(){if(!running)return;setActive('strumTest');$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;envO=null;envPrev=0;lastOnset=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
 function finishStrumTest(){
-  state='live';$('prompt').textContent='Strum test done';
+  setActive('');state='live';$('prompt').textContent='Strum test done';
   const n=onsetCount;
-  let verdict, recRise=0.003, recMin=0.006;
-  if(n<8){verdict='under-detecting → more sensitive';recRise=0.0022;recMin=0.005;}
-  else if(n>14){verdict='over-detecting → less sensitive';recRise=0.0045;recMin=0.008;}
+  let verdict, recRise=0.0009, recMin=0.0015;
+  if(n<8){verdict='under-detecting → more sensitive';recRise=0.0006;recMin=0.0010;}
+  else if(n>14){verdict='over-detecting → less sensitive';recRise=0.0018;recMin=0.003;}
   else {verdict='good';}
   window._recRise=recRise;window._recMin=recMin;
   const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+strumStats.peak.toFixed(3)+'\n  verdict: '+verdict+'\n  recommended onset rise '+recRise+', min '+recMin+'\n';
