@@ -68,6 +68,7 @@
 
   <div class="prompt" id="prompt"></div>
   <div id="chorddiagram" style="text-align:center"></div>
+  <div class="row" id="testBtns" style="display:none;justify-content:center;margin-top:8px"><button id="captureBtn">● Capture</button><button class="ghost" id="skipChordBtn">Skip</button></div>
 
   <div class="card" id="resultsCard" style="display:none">
     <div class="lbl">Results</div>
@@ -105,7 +106,8 @@ const $=id=>document.getElementById(id);
 
 let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null;
 let freqBuf=null,timeBuf=null,ema=null;
-let lastOnset=0,rmsBase=null,rmsPrev=0,onsetCount=0,strumT=null;
+let lastOnset=0,envO=null,envPrev=0,onsetCount=0,strumT=null;
+const ONSETRISE=0.003, ONSETMIN=0.006;
 let state='idle';
 // capture buffers
 let cap=null;            // chord-test accumulator
@@ -158,13 +160,13 @@ function analyze(){
   for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
     const lin=Math.pow(10,db/20);const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;chroma[pc]+=lin;}
   if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
-  // onset (rms rise)
-  if(rmsBase===null){rmsBase=rms;rmsPrev=rms;}
-  const rising=rms>=rmsPrev,thr=rmsBase*1.6+0.006;
-  let onset=false;
-  if(rms>thr&&rising&&rms>0.008&&audioCtx.currentTime-lastOnset>0.08){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
-  rmsBase=rms>rmsBase?rmsBase*0.80+rms*0.20:rmsBase*0.96+rms*0.04;rmsPrev=rms;
-  return {rms,thr,chroma:ema,onset};
+  // onset = sharp positive rise of a smoothed envelope (catches attacks during sustain)
+  if(envO===null){envO=rms;envPrev=rms;}
+  envO=envO*0.6+rms*0.4;
+  const rise=envO-envPrev;let onset=false;
+  if(rise>ONSETRISE&&envO>ONSETMIN&&audioCtx.currentTime-lastOnset>0.09){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
+  envPrev=envO;
+  return {rms,rise,env:envO,chroma:ema,onset};
 }
 
 function loop(){
@@ -177,25 +179,26 @@ function loop(){
   $('best').textContent=a.rms<0.01?'—':best;$('bestpct').textContent=a.rms<0.01?'':Math.round(bestS*100)+'%';
   if(a.onset){$('odot').classList.add('on');clearTimeout(strumT);strumT=setTimeout(()=>$('odot').classList.remove('on'),130);}
   $('ocount').textContent=onsetCount+' strums';
-  $('onsetdbg').textContent='rms '+a.rms.toFixed(3)+' · thr '+a.thr.toFixed(3)+' · base '+rmsBase.toFixed(3);
+  $('onsetdbg').textContent='rms '+a.rms.toFixed(3)+' · env '+a.env.toFixed(3)+' · rise '+a.rise.toFixed(4);
 
   // chord test state machine
   if(state==='chordtest'){
-    const now=performance.now();
     if(TESTSEQ[testIdx]!==lastDiagChord){lastDiagChord=TESTSEQ[testIdx];$('chorddiagram').innerHTML=diagram(CHORDS[TESTSEQ[testIdx]]);}
-    if(phase==='ready'){
-      $('prompt').textContent='Play & hold:  '+TESTSEQ[testIdx];
-      if(now-phaseT>1600){phase='capture';phaseT=now;cap={n:0,cos:0,arg:0,notes:0};}
-    } else if(phase==='capture'){
-      $('prompt').textContent='● recording '+TESTSEQ[testIdx]+'…';
-      if(a.rms>0.012){const tgt=TESTSEQ[testIdx];const cs=cosine(a.chroma,TPL[tgt]);
+    const tgt=TESTSEQ[testIdx];
+    if(phase==='await'){
+      $('prompt').textContent='Play & hold '+tgt+' — tap ● Capture';
+    } else if(phase==='capturing'){
+      $('prompt').textContent='● recording '+tgt+'… keep holding';
+      if(a.rms>0.008){const cs=cosine(a.chroma,TPL[tgt]);
         const present=CHORDS[tgt].pcs.filter(pc=>a.chroma[pc]>0.25*maxc).length/CHORDS[tgt].pcs.length;
         cap.n++;cap.cos+=cs;cap.arg+=(best===tgt?1:0);cap.notes+=present;}
-      if(now-phaseT>3000){
-        const r=cap.n>3?{name:TESTSEQ[testIdx],n:cap.n,avgCos:cap.cos/cap.n,argmaxPct:Math.round(100*cap.arg/cap.n),avgNotes:cap.notes/cap.n}
-                       :{name:TESTSEQ[testIdx],n:cap.n,avgCos:0,argmaxPct:0,avgNotes:0,nosig:true};
-        chordResults.push(r);testIdx++;
-        if(testIdx>=TESTSEQ.length){finishChordTest();}else{phase='ready';phaseT=now;}
+      if(performance.now()-phaseT>2500){
+        const r=cap.n>3?{name:tgt,n:cap.n,avgCos:cap.cos/cap.n,argmaxPct:Math.round(100*cap.arg/cap.n),avgNotes:cap.notes/cap.n}
+                       :{name:tgt,n:cap.n,avgCos:0,argmaxPct:0,avgNotes:0,nosig:true};
+        chordResults.push(r);phase='review';
+        $('prompt').textContent = r.nosig ? (tgt+': didn\'t hear it — tap ↻ Retry') : (tgt+': heard '+Math.round(r.avgCos*100)+'%  ('+r.argmaxPct+'% match)');
+        $('captureBtn').textContent = (testIdx>=TESTSEQ.length-1)?'Finish ✓':'Next →';
+        $('skipChordBtn').textContent='↻ Retry';
       }
     }
   } else if(state==='strumtest'){
@@ -207,9 +210,9 @@ function loop(){
   rafId=requestAnimationFrame(loop);
 }
 
-function startChordTest(){if(!running)return;state='chordtest';testIdx=0;phase='ready';phaseT=performance.now();chordResults=[];$('resultsCard').style.display='none';}
+function startChordTest(){if(!running)return;state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
 function finishChordTest(){
-  state='live';$('prompt').textContent='Chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;
+  state='live';$('prompt').textContent='Chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;$('testBtns').style.display='none';
   // recommend cosine threshold
   const good=chordResults.filter(r=>!r.nosig&&r.argmaxPct>=70&&r.avgCos>=0.55);
   let rec= good.length? Math.max(0.45, Math.min(...good.map(r=>r.avgCos))*0.8) : 0.5;
@@ -231,25 +234,35 @@ function startStrumTest(){if(!running)return;$('chorddiagram').innerHTML='';last
 function finishStrumTest(){
   state='live';$('prompt').textContent='Strum test done';
   const n=onsetCount;
-  let verdict, recFactor=1.6, recFloor=0.006;
-  if(n<8){verdict='under-detecting → more sensitive';recFactor=1.3;recFloor=0.004;}
-  else if(n>14){verdict='over-detecting → less sensitive';recFactor=2.0;recFloor=0.010;}
+  let verdict, recRise=0.003, recMin=0.006;
+  if(n<8){verdict='under-detecting → more sensitive';recRise=0.0022;recMin=0.005;}
+  else if(n>14){verdict='over-detecting → less sensitive';recRise=0.0045;recMin=0.008;}
   else {verdict='good';}
-  window._recFactor=recFactor;window._recFloor=recFloor;
-  const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+strumStats.peak.toFixed(3)+'\n  verdict: '+verdict+'\n  recommended onset factor '+recFactor+', floor '+recFloor+'\n';
-  $('results').innerHTML='<table><tr><th>detected</th><th>peak rms</th><th>verdict</th></tr><tr><td>'+n+'</td><td>'+strumStats.peak.toFixed(3)+'</td><td>'+verdict+'</td></tr></table><div class="hint" style="margin-top:8px">Recommended onset factor <b>'+recFactor+'</b>, floor <b>'+recFloor+'</b></div>';
+  window._recRise=recRise;window._recMin=recMin;
+  const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+strumStats.peak.toFixed(3)+'\n  verdict: '+verdict+'\n  recommended onset rise '+recRise+', min '+recMin+'\n';
+  $('results').innerHTML='<table><tr><th>detected</th><th>peak rms</th><th>verdict</th></tr><tr><td>'+n+'</td><td>'+strumStats.peak.toFixed(3)+'</td><td>'+verdict+'</td></tr></table><div class="hint" style="margin-top:8px">Recommended onset rise <b>'+recRise+'</b>, min <b>'+recMin+'</b></div>';
   $('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
 }
 
 function save(){
   try{
     if(window._recCos!=null)localStorage.setItem('pluckChordCos',String(window._recCos));
-    if(window._recFactor!=null)localStorage.setItem('pluckOnsetFactor',String(window._recFactor));
-    if(window._recFloor!=null)localStorage.setItem('pluckOnsetFloor',String(window._recFloor));
-    $('saved').textContent='Saved ✓ — Chord Coach & Song Mode will use these. (cos '+(localStorage.getItem('pluckChordCos')||'-')+', onset '+(localStorage.getItem('pluckOnsetFactor')||'-')+'/'+(localStorage.getItem('pluckOnsetFloor')||'-')+')';
+    if(window._recRise!=null)localStorage.setItem('pluckOnsetRise',String(window._recRise));
+    if(window._recMin!=null)localStorage.setItem('pluckOnsetMin',String(window._recMin));
+    $('saved').textContent='Saved ✓ — Chord Coach & Song Mode will use these. (cos '+(localStorage.getItem('pluckChordCos')||'-')+', onset '+(localStorage.getItem('pluckOnsetRise')||'-')+'/'+(localStorage.getItem('pluckOnsetMin')||'-')+')';
   }catch(e){$('saved').textContent='could not save';}
 }
 
+$('captureBtn').addEventListener('click',()=>{
+  if(state!=='chordtest')return;
+  if(phase==='await'){phase='capturing';cap={n:0,cos:0,arg:0,notes:0};phaseT=performance.now();$('captureBtn').textContent='● Recording…';}
+  else if(phase==='review'){testIdx++;if(testIdx>=TESTSEQ.length){finishChordTest();return;}phase='await';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
+});
+$('skipChordBtn').addEventListener('click',()=>{
+  if(state!=='chordtest')return;
+  if(phase==='review'){chordResults.pop();phase='await';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
+  else if(phase==='await'){chordResults.push({name:TESTSEQ[testIdx],n:0,avgCos:0,argmaxPct:0,avgNotes:0,nosig:true});testIdx++;if(testIdx>=TESTSEQ.length){finishChordTest();return;}phase='await';$('captureBtn').textContent='● Capture';}
+});
 $('micBtn').addEventListener('click',toggleMic);
 $('chordTest').addEventListener('click',startChordTest);
 $('strumTest').addEventListener('click',startStrumTest);

@@ -149,7 +149,7 @@ const CHORDS={
 };
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
-const CHORDCOS=CFG('pluckChordCos',0.5), ONSETFACTOR=CFG('pluckOnsetFactor',1.6), ONSETFLOOR=CFG('pluckOnsetFloor',0.006);
+const CHORDCOS=CFG('pluckChordCos',0.5), ONSETRISE=CFG('pluckOnsetRise',0.003), ONSETMIN=CFG('pluckOnsetMin',0.006);
 
 /* ---------- songs (chord-only, simplified arrangements) ---------- */
 const SONGS=[
@@ -181,7 +181,7 @@ const $=id=>document.getElementById(id);
 let SONG=null, TL=[], idx=0, target='C';
 let mode='wait', beatsPerChord=4, beatsPerBar=4, countInOn=true;
 let clockOn=false, clockT0=0, secPerBeat=0.5, lastBeat=-1, inCountIn=false, metOscs=[], metGain=null;
-let lastOnset=0, onsets=[], latencyOffset=0, rmsBase=null, rmsPrev=0, strumT=null;
+let lastOnset=0, onsets=[], latencyOffset=0, envO=null, envPrev=0, strumT=null;
 let lastJudgedBeat=-1, beatStats={total:0,played:0,onTime:0};
 let calibrating=false, calOnsets=[], calT0=0, calSPB=0.5;
 
@@ -294,7 +294,7 @@ function startClock(){
   const bpm=+$('bpm').value;countInOn=$('cin').checked;secPerBeat=60/bpm;
   const cb=countInOn?beatsPerBar:0, total=cb+TL.length*beatsPerChord;
   clockT0=audioCtx.currentTime+0.18;lastBeat=-1;inCountIn=countInOn;clockOn=true;
-  lastJudgedBeat=-1;onsets=[];emaFlux=0;prevFreq=null;beatStats={total:0,played:0,onTime:0};$('verdict').textContent='';$('timing').textContent='';
+  lastJudgedBeat=-1;onsets=[];envO=null;envPrev=0;beatStats={total:0,played:0,onTime:0};$('verdict').textContent='';$('timing').textContent='';
   metGain=audioCtx.createGain();metGain.gain.value=1;metGain.connect(audioCtx.destination);metOscs=[];
   for(let i=0;i<total;i++){
     const t=clockT0+i*secPerBeat, accent=(((i-cb)%beatsPerBar)+beatsPerBar)%beatsPerBar===0;
@@ -320,15 +320,15 @@ function tickTempo(){
 /* ---------- onset detection + strum-timing grading (Phase 2) ---------- */
 function detectOnset(rms){
   const tNow=audioCtx.currentTime;
-  if(rmsBase===null){rmsBase=rms;rmsPrev=rms;return;}
-  const rising=rms>=rmsPrev, thr=rmsBase*ONSETFACTOR+ONSETFLOOR;
-  if(rms>thr && rising && rms>0.008 && tNow-lastOnset>0.08){
+  if(envO===null){envO=rms;envPrev=rms;return;}
+  envO=envO*0.6+rms*0.4;
+  const rise=envO-envPrev;
+  if(rise>ONSETRISE && envO>ONSETMIN && tNow-lastOnset>0.09){
     lastOnset=tNow;onsets.push(tNow);if(onsets.length>60)onsets.shift();if(calibrating)calOnsets.push(tNow);
     const el=$('strum');if(el){el.style.opacity='1';clearTimeout(strumT);strumT=setTimeout(()=>{el.style.opacity='0';},140);}
   }
-  rmsBase = rms>rmsBase ? rmsBase*0.80+rms*0.20 : rmsBase*0.96+rms*0.04;
-  rmsPrev=rms;
-  const od=$('odbg');if(od)od.textContent='lvl '+rms.toFixed(3)+' · base '+rmsBase.toFixed(3)+' · thr '+thr.toFixed(3)+' · strums '+onsets.length;
+  envPrev=envO;
+  const od=$('odbg');if(od)od.textContent='lvl '+rms.toFixed(3)+' · env '+envO.toFixed(3)+' · rise '+rise.toFixed(4)+' · strums '+onsets.length;
 }
 function showVerdict(v){
   const m={on:['ON TIME','var(--good)'],early:['EARLY','var(--warn)'],late:['LATE','#6cb8ff'],miss:['MISS','var(--muted)']};
@@ -354,7 +354,7 @@ async function calibrate(){
   try{
     const ctx=ensureCtx();if(ctx.state!=='running')await ctx.resume();
     await connectMic();running=true;keepAwake();
-    calibrating=true;calOnsets=[];onsets=[];emaFlux=0;prevFreq=null;lastOnset=0;
+    calibrating=true;calOnsets=[];onsets=[];envO=null;envPrev=0;lastOnset=0;
     const bpm=+$('bpm').value, spb=60/bpm, N=8;
     calT0=ctx.currentTime+0.6;calSPB=spb;
     $('state').textContent='strum on each beat ×'+N;$('verdict').textContent='';
