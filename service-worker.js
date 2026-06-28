@@ -1,9 +1,10 @@
-const CACHE = 'tuner-v30';
+const CACHE = 'tuner-v31';
 const ASSETS = [
   './',
   './index.html',
   './chord-coach.html',
   './song-mode.html',
+  './lesson.html',
   './diag.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
