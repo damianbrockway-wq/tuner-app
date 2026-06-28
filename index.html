@@ -56,6 +56,7 @@
   .note small{font-size:.34em;font-weight:700;vertical-align:super;opacity:.6;letter-spacing:0}
   .cents{font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;color:var(--muted);margin-top:4px;height:20px}
   .state{font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-top:8px;height:16px;opacity:.85;transition:.2s}
+  .bigstatus{margin:8px auto 0;font-size:clamp(18px,5.5vw,24px);font-weight:800;letter-spacing:.3px;text-align:center;min-height:30px;transition:color .15s}
 
   .strings{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;width:100%}
   .strings button{position:relative;min-width:50px;height:50px;padding:0 6px;border-radius:14px;
@@ -101,6 +102,8 @@
       <div class="state" id="state">tap a string ▾</div>
     </div>
   </div>
+
+  <div class="bigstatus" id="bigstatus">play a string ♪</div>
 
   <div class="strings" id="strings"></div>
 
@@ -288,30 +291,34 @@ function loop(){
 
     // lock logic with hysteresis
     const a=Math.abs(cents);
-    if(a<=5){lockHold+=dt;}
+    if(a<=6){lockHold+=dt;}
     else if(a<=14&&locked){/* stay locked */}
     else if(a<=10){/* hold */}
     else {lockHold=Math.max(0,lockHold-dt*1.5);if(a>22)locked=false;}
-    lockProg=Math.min(1,lockHold/0.8);
+    lockProg=Math.min(1,lockHold/0.6);
     if(lockProg>=1&&!locked){locked=true;celebrate(s);}
     if(locked&&a>16)locked=false;
 
     $('note').innerHTML=`${s.n}<small>${s.o}</small>`;
     $('cents').textContent=(cents>=0?'+':'')+Math.round(cents)+'¢';
     let col;
-    if(locked||a<=5){col=getCss('--good');$('state').innerHTML=locked?'<span class="done">LOCKED ✓</span>':'in tune';}
+    if(locked||a<=6){col=getCss('--good');$('state').innerHTML=locked?'<span class="done">LOCKED ✓</span>':'in tune';}
     else if(a<=15){col=getCss('--warn');$('state').textContent=cents>0?'a touch sharp':'a touch flat';}
     else{col=getCss('--bad');$('state').textContent=cents>0?'too sharp · loosen':'too flat · tighten';}
     $('note').style.color=col;
+    const nm=s.n+s.o;
+    if(locked||a<=6){$('bigstatus').innerHTML='<b>'+nm+'</b> — IN TUNE ✓';$('bigstatus').style.color=getCss('--good');}
+    else if(cents<0){$('bigstatus').innerHTML='Hearing <b>'+nm+'</b> — TIGHTEN ▲';$('bigstatus').style.color=getCss(a<=15?'--warn':'--bad');}
+    else{$('bigstatus').innerHTML='Hearing <b>'+nm+'</b> — LOOSEN ▼';$('bigstatus').style.color=getCss(a<=15?'--warn':'--bad');}
     render(smoothCents,res.clarity,locked,lockProg,col);
   }else if(now<graceUntil){
     // momentary dropout — keep the display steady so it doesn't flicker
-    lockHold=Math.max(0,lockHold-dt*0.5);lockProg=Math.min(1,lockHold/0.8);
+    lockHold=Math.max(0,lockHold-dt*0.5);lockProg=Math.min(1,lockHold/0.6);
     render(smoothCents,0,locked,lockProg,$('note').style.color||null);
   }else{
-    history.length=0;lockHold=Math.max(0,lockHold-dt*2);lockProg=Math.min(1,lockHold/0.8);
+    history.length=0;lockHold=Math.max(0,lockHold-dt*2);lockProg=Math.min(1,lockHold/0.6);
     smoothCents*=0.9;
-    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='';$('note').style.color='';$('cents').textContent='';}
+    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='';$('note').style.color='';$('cents').textContent='';$('bigstatus').textContent='play a string ♪';$('bigstatus').style.color=getCss('--muted');}
     render(smoothCents,0,locked,lockProg,null);
   }
   stepParticles(dt);
