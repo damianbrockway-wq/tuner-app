@@ -89,7 +89,9 @@ const CHORDS={
   'Em':{frets:[0,4,3,2],fingers:[0,3,2,1],pcs:[4,7,11],  notes:['E','G','B']},
   'Dm':{frets:[2,2,1,0],fingers:[2,3,1,0],pcs:[2,5,9],   notes:['D','F','A']},
   'C7':{frets:[0,0,0,1],fingers:[0,0,0,1],pcs:[0,4,7,10],notes:['C','E','G','B♭']},
-  'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5],notes:['G','B','D','F']}
+  'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5],notes:['G','B','D','F']},
+  'D' :{frets:[2,2,2,0],fingers:[1,2,3,0],pcs:[2,6,9],   notes:['D','F♯','A']},
+  'A' :{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4],   notes:['A','C♯','E']}
 };
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
@@ -136,9 +138,25 @@ const LESSONS={
   {type:'pick', chord:'Am', seq:['g','C','E','A'], step:'Step 3 · Picking on Am', title:'Now on Am', body:"Hold Am and pluck g–C–E–A again. Same picking, new chord — hear how it changes."},
   {type:'seq', seq:['C','Am','Dm','F'], step:'Step 4 · A gentle song', title:'C · Am · Dm · F', body:"A soft, pretty progression. Strum it, or fingerpick each chord if you're feeling brave."},
   {type:'done', step:'Done', title:'🎉 Lesson 4 complete!', body:"You learned Dm and started fingerpicking. Five chords and two ways to play them — you're really playing the ukulele now."}
+ ],
+ 5:[
+  {type:'info', step:'Lesson 5', title:'New keys: D and A', body:"So far you've played in the key of C. Today you'll learn two new chords — D and A — and use them to play in the bright, sunny key of D. Take it slow; these two open up a whole new set of songs."},
+  {type:'chord', chord:'D', step:'Step 1 · New chord', title:'This is D', body:"Stack three fingers on the 2nd fret — one each on the C, E and A strings (leave the g string open). It's a tight squeeze to fit them side by side, so curl your fingers and use the very tips. Strum and listen for D."},
+  {type:'chord', chord:'A', step:'Step 2 · New chord', title:'This is A', body:"Just two fingers: index on the C string, 1st fret, and middle on the g string, 2nd fret. Much roomier than D! Strum down and listen for A."},
+  {type:'seq', seq:['D','A','D','A'], step:'Step 3 · D ↔ A change', title:'Switch D ↔ A', body:"The squeeze of D to the easy A and back — a great change to drill. Get each shape, then strum. It advances every time it hears the right chord."},
+  {type:'seq', seq:['D','G','A','D'], step:'Step 4 · A song in D', title:'D · G · A · D', body:"Your first song in a new key! This is the classic I–IV–V — the three chords at the heart of countless folk and pop tunes. You already know G, so you're set. Strum each chord."},
+  {type:'done', step:'Done', title:'🎉 Lesson 5 complete!', body:"You learned D and A and played in a brand-new key. That's seven chords now — you're building a real toolkit. Lovely work."}
+ ],
+ 6:[
+  {type:'info', step:'Lesson 6', title:'7th chords & the blues', body:"Today you'll meet 7th chords — C7 and G7 — and play a 12-bar blues. That extra note gives chords a warm, restless, bluesy growl that plain chords just don't have. Let's hear it."},
+  {type:'chord', chord:'C7', step:'Step 1 · New chord', title:'This is C7', body:"The easiest chord yet — one finger! Index on the A string, 1st fret. That single added note turns plain old C into a bluesy C7. Strum and listen."},
+  {type:'chord', chord:'G7', step:'Step 2 · New chord', title:'This is G7', body:"Three fingers in a little triangle: index on the E string 1st fret, middle on the C string 2nd fret, ring on the A string 2nd fret (frets 0–2–1–2). Strum down and listen for G7."},
+  {type:'seq', seq:['C7','F','G7','C7'], step:'Step 3 · The change', title:'C7 · F · G7 · C7', body:"These three are the engine of the blues. Drill the moves between them — get each shape, then strum. It advances each time it hears the right chord."},
+  {type:'seq', seq:['C7','C7','F','C7','G7','F','C7','G7'], step:'Step 4 · 12-bar blues', title:'Play the blues', body:"A shortened 12-bar blues in C, using C7, F and G7. This pattern is behind thousands of blues and rock'n'roll songs. Strum it through and feel that bluesy swing."},
+  {type:'done', step:'Done', title:'🎉 Lesson 6 complete!', body:"You learned C7 and G7 and played a 12-bar blues. You now know nine chords and the secret to that bluesy sound. Outstanding work."}
  ]
 };
-const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=4)?n:1;})();
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=6)?n:1;})();
 const STEPS=LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;

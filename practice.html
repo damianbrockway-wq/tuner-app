@@ -54,6 +54,9 @@
 
   <!-- setup -->
   <div id="setup" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+    <div class="row"><button class="primary" id="todayBtn">🎯 Today's Practice</button></div>
+    <div class="best" id="streak"></div>
+    <div class="lbl" style="margin-top:6px;opacity:.7">— or drill one pair —</div>
     <div class="lbl">One-minute changes</div>
     <div class="sub" id="intro">Switch between two chords as many times as you can in 60 seconds. The app picks your weakest pair — beat your record.</div>
     <div class="pair" id="pairView"></div>
@@ -77,7 +80,7 @@
   <div id="result" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
     <div class="lbl">Result</div>
     <div class="big" id="rcount">0</div>
-    <div class="sub">changes per minute</div>
+    <div class="sub" id="rsub">changes per minute</div>
     <div class="best" id="rbest"></div>
     <div class="sub" id="rmsg"></div>
     <div class="row"><button class="primary" id="againBtn">Again</button><button class="ghost" id="backBtn">Pick another</button></div>
@@ -135,7 +138,7 @@ let A='C',B='Am';
 function showSetup(){
   $('setup').style.display='flex';$('drill').style.display='none';$('result').style.display='none';
   pairHTML(A,B,null,$('pairView'));
-  $('best').textContent='Your best: '+(Skill.best(A,B)||'—')+' changes/min';
+  $('best').textContent='Your best: '+(Skill.best(A,B)||'—')+' changes/min'; const stEl=$('streak'); if(stEl)stEl.textContent=streakText();
   const ch=learnedChords();const cc=$('chips');cc.innerHTML='';let sel=[A,B];
   ch.forEach(c=>{const b=document.createElement('button');b.textContent=c;if(sel.includes(c))b.classList.add('on');
     b.onclick=()=>{ if(sel.includes(c)){sel=sel.filter(x=>x!==c);} else { sel.push(c); if(sel.length>2)sel.shift(); }
@@ -147,11 +150,12 @@ function showSetup(){
 
 /* ---------- the drill ---------- */
 let running=false,count=0,target='',lastConfirmed=null,matchHold=0,tEnd=0,lastT=performance.now();
+let inSession=false,sessionQueue=[],sessionResults=[],drillSecs=60;
 function startDrill(){
   $('setup').style.display='none';$('result').style.display='none';$('drill').style.display='flex';
   count=0;lastConfirmed=null;matchHold=0;target=A;
   $('count').textContent='0';pairHTML(A,B,target,$('drillPair'));$('state').textContent='play '+target;
-  tEnd=performance.now()+60000;
+  tEnd=performance.now()+drillSecs*1000;
   ensureMic();
   tick();
 }
@@ -173,7 +177,9 @@ function confirmChord(name){
 function finishDrill(){
   running=false;stopMic();
   Skill.recordChange(A,B,count);
+  if(inSession){ sessionResults.push({A,B,count}); if(sessionQueue.length){nextSessionDrill();return;} showSessionSummary(); return; }
   $('drill').style.display='none';$('result').style.display='flex';
+  $('rsub').textContent='changes per minute';
   $('rcount').textContent=count;
   const best=Skill.best(A,B);
   $('rbest').textContent='Best: '+best+' changes/min';
@@ -183,6 +189,21 @@ function finishDrill(){
   else if(count>=15)msg="Good progress. Aim for 30 next time.";
   else msg="Keep at it — speed comes with reps. Slow and clean first.";
   $('rmsg').textContent=msg;
+}
+
+/* ---------- session + streak ---------- */
+function weakestPairs(k){const pairs=allPairs(learnedChords());pairs.sort((x,y)=>{const bx=Skill.best(...x),by=Skill.best(...y);if(bx!==by)return bx-by;return Skill.lastSeen(...x)-Skill.lastSeen(...y);});return pairs.slice(0,k);}
+function getStreak(){try{return JSON.parse(localStorage.getItem('pluckStreak')||'{}');}catch(e){return{};}}
+function streakText(){const s=getStreak();if(!s.last)return 'Practice daily to build a streak 🔥';const t=new Date().toDateString();if(s.last===t)return '🔥 '+s.count+'-day streak — done today';return '🔥 '+s.count+'-day streak — practice today to keep it';}
+function bumpStreak(){const s=getStreak(),t=new Date().toDateString();if(s.last===t)return s.count;const y=new Date(Date.now()-86400000).toDateString();const count=(s.last===y)?(s.count||0)+1:1;localStorage.setItem('pluckStreak',JSON.stringify({last:t,count}));return count;}
+function startSession(){const pairs=weakestPairs(2);if(!pairs.length){startDrill();return;}sessionQueue=pairs.slice();sessionResults=[];inSession=true;drillSecs=40;nextSessionDrill();}
+function nextSessionDrill(){if(!sessionQueue.length){showSessionSummary();return;}[A,B]=sessionQueue.shift();startDrill();}
+function showSessionSummary(){
+  inSession=false;const total=sessionResults.reduce((s,r)=>s+r.count,0);bumpStreak();
+  $('drill').style.display='none';$('result').style.display='flex';
+  $('rcount').textContent=total;$('rsub').textContent='changes across '+sessionResults.length+' drills';
+  $('rbest').textContent=streakText();
+  $('rmsg').innerHTML='Session done! '+sessionResults.map(r=>r.A+'⇄'+r.B+': '+r.count).join(' · ')+'<br>Come back tomorrow to keep the streak.';
 }
 
 /* ---------- audio (chord detection, auto-resume) ---------- */
@@ -236,10 +257,11 @@ function loop(){
 
 /* ---------- wiring ---------- */
 [A,B]=weakestPair();
-$('startBtn').addEventListener('click',startDrill);
+$('startBtn').addEventListener('click',()=>{inSession=false;drillSecs=60;startDrill();});
+$('todayBtn').addEventListener('click',startSession);
 $('diffBtn').addEventListener('click',()=>{const ch=learnedChords();const pairs=allPairs(ch);if(pairs.length){const idx=(pairs.findIndex(p=>Skill.changeKey(...p)===Skill.changeKey(A,B))+1)%pairs.length;[A,B]=pairs[idx];showSetup();}});
 $('stopBtn').addEventListener('click',finishDrill);
-$('againBtn').addEventListener('click',startDrill);
+$('againBtn').addEventListener('click',()=>{inSession=false;drillSecs=60;startDrill();});
 $('backBtn').addEventListener('click',()=>{showSetup();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
