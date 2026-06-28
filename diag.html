@@ -112,6 +112,10 @@ const TPL={};POOL.forEach(n=>{const t=new Array(12).fill(0);CHORDS[n].pcs.forEac
 const TESTSEQ=['C','Am','F','G','C7','G7','Dm','Em','D','A','E','F#m'];
 const NOTE=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const $=id=>document.getElementById(id);
+const CFG=(k,dv)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?dv:v;};
+let ON={rise:0.0008,floor:0.0015,ratio:2.0,refract:0.18};
+function loadOnsetCfg(){ON={rise:CFG('pluckOnRise',0.0008),floor:CFG('pluckOnFloor',0.0015),ratio:CFG('pluckOnRatio',2.0),refract:CFG('pluckOnRefract',0.18)};}
+loadOnsetCfg();
 
 let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null;
 let freqBuf=null,timeBuf=null,ema=null;
@@ -211,9 +215,9 @@ function analyze(){
   if(envO===null){envO=rms;envPrev=rms;slowEnv=rms;}
   envO=envO*0.6+rms*0.4;const rise=envO-envPrev;
   slowEnv=slowEnv*0.9+rms*0.1;
-  const riseHit=rise>0.0008&&envO>0.0015, ratioHit=rms>0.004&&slowEnv>1e-5&&rms/slowEnv>2.0;
+  const riseHit=rise>ON.rise&&envO>ON.floor, ratioHit=rms>ON.floor*2.5&&slowEnv>1e-5&&rms/slowEnv>ON.ratio;
   let onset=false;
-  if((riseHit||ratioHit)&&audioCtx.currentTime-lastOnset>0.18){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
+  if((riseHit||ratioHit)&&audioCtx.currentTime-lastOnset>ON.refract){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
   envPrev=envO;
   return {rms,rise,env:envO,chroma:ema,onset};
 }
@@ -266,7 +270,7 @@ function loop(){
   } else if(state==='strumtest'){
     const now=performance.now();
     $('prompt').innerHTML='<span style="font-size:30px;font-weight:800">'+onsetCount+'</span> strums &nbsp;·&nbsp; level <b>'+a.rms.toFixed(3)+'</b>';
-    strumStats.peak=Math.max(strumStats.peak,a.rms);
+    strumStats.peak=Math.max(strumStats.peak,a.rms); if(a.rms>0.0002)strumStats.noise=Math.min(strumStats.noise,a.rms);
     if(now-strumStats.t0>12000){finishStrumTest();}
   }
   rafId=requestAnimationFrame(loop);
@@ -295,17 +299,18 @@ function finishChordTest(){
   renderReport();
 }
 
-function startStrumTest(){if(!running)return;setActive('strumTest');$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;envO=null;envPrev=0;slowEnv=null;lastOnset=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
+function startStrumTest(){if(!running)return;setActive('strumTest');$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;loadOnsetCfg();state='strumtest';onsetCount=0;envO=null;envPrev=0;slowEnv=null;lastOnset=0;strumStats={t0:performance.now(),peak:0,noise:1};$('resultsCard').style.display='none';}
 function finishStrumTest(){
   setActive('');state='live';$('prompt').textContent='Strum test done';
-  const n=onsetCount;
-  let verdict, recRise=0.0009, recMin=0.0015;
-  if(n<8){verdict='under-detecting → more sensitive';recRise=0.0006;recMin=0.0010;}
-  else if(n>14){verdict='over-detecting → less sensitive';recRise=0.0018;recMin=0.003;}
-  else {verdict='good';}
-  window._recRise=recRise;window._recMin=recMin;
-  const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+strumStats.peak.toFixed(3)+'\n  verdict: '+verdict+'\n  recommended onset rise '+recRise+', min '+recMin+'\n';
-  $('results').innerHTML='<table><tr><th>detected</th><th>peak rms</th><th>verdict</th></tr><tr><td>'+n+'</td><td>'+strumStats.peak.toFixed(3)+'</td><td>'+verdict+'</td></tr></table><div class="hint" style="margin-top:8px">Recommended onset rise <b>'+recRise+'</b>, min <b>'+recMin+'</b></div>';
+  const n=onsetCount, peak=strumStats.peak, noise=(strumStats.noise<1?strumStats.noise:0.001);
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  let rise,floor,ratio,refract,verdict;
+  if(n>13){ floor=clamp(Math.max(peak*0.32,noise*5),0.0015,Math.max(0.0016,peak*0.6)); rise=clamp(peak*0.10,0.0008,0.012); ratio=2.6; refract=0.27; verdict='over-detecting → less sensitive'; }
+  else if(n<8){ floor=clamp(Math.max(peak*0.12,noise*3),0.0010,Math.max(0.0011,peak*0.4)); rise=clamp(peak*0.06,0.0006,0.010); ratio=1.8; refract=0.18; verdict='under-detecting → more sensitive'; }
+  else { rise=ON.rise; floor=ON.floor; ratio=ON.ratio; refract=ON.refract; verdict='good — keeping this phone\'s settings'; }
+  window._on={rise:+rise.toFixed(4),floor:+floor.toFixed(4),ratio:+ratio.toFixed(2),refract:+refract.toFixed(2)};
+  const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+peak.toFixed(3)+' · noise '+noise.toFixed(4)+'\n  verdict: '+verdict+'\n  calibrated → floor '+window._on.floor+' ratio '+window._on.ratio+' gap '+window._on.refract+'s\n';
+  $('results').innerHTML='<table><tr><th>detected</th><th>peak</th><th>verdict</th></tr><tr><td>'+n+'</td><td>'+peak.toFixed(3)+'</td><td>'+verdict+'</td></tr></table><div class="hint" style="margin-top:8px">Calibrated for this phone → floor <b>'+window._on.floor+'</b>, ratio <b>'+window._on.ratio+'</b>, gap <b>'+window._on.refract+'s</b>. Tap Save, then re-run to confirm ~10.</div>';
   try{localStorage.setItem('pluckRepStrum',JSON.stringify({date:new Date().toLocaleString(),n:n,peak:+strumStats.peak.toFixed(3),verdict:verdict}));}catch(e){}
   renderReport();
   $('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
@@ -314,8 +319,8 @@ function finishStrumTest(){
 function buildReport(){
   let t='PLUCK — DETECTION REPORT\n('+new Date().toLocaleString()+')\n';
   t+='\nMic signal seen this session: '+(sawSignal?'YES':'no — tap Start mic and play')+'\n';
-  const cos=localStorage.getItem('pluckChordCos'),rise=localStorage.getItem('pluckOnsetRise'),min=localStorage.getItem('pluckOnsetMin'),lat=localStorage.getItem('pluckLat');
-  t+='\nSaved settings:\n  chord threshold: '+(cos||'(default 0.5)')+'\n  onset rise/min:  '+(rise||'(0.003)')+' / '+(min||'(0.006)')+'\n  latency:         '+(lat!=null&&lat!==''?Math.round(parseFloat(lat)*1000)+'ms':'(not set)')+'\n';
+  const cos=localStorage.getItem('pluckChordCos'),lat=localStorage.getItem('pluckLat');
+  t+='\nSaved settings (this phone):\n  chord threshold: '+(cos||'(default 0.5)')+'\n  strum floor:     '+(localStorage.getItem('pluckOnFloor')||'(default)')+'\n  strum ratio:     '+(localStorage.getItem('pluckOnRatio')||'(2.0)')+'\n  strum gap:       '+(localStorage.getItem('pluckOnRefract')||'(0.18)')+'s\n  latency:         '+(lat!=null&&lat!==''?Math.round(parseFloat(lat)*1000)+'ms':'(not set)')+'\n';
   try{const st=JSON.parse(localStorage.getItem('pluckRepStrum')||'null');if(st)t+='\nLast strum test ('+st.date+'):\n  detected '+st.n+' of ~10  ·  '+st.verdict+'\n';}catch(e){}
   try{const ct=JSON.parse(localStorage.getItem('pluckRepChord')||'null');if(ct){t+='\nLast chord test ('+ct.date+'):\n';ct.chords.forEach(c=>{t+='  '+String(c.n).padEnd(4)+(c.nosig?' no signal':(' cos '+c.cos+'  argmax '+c.arg+'%  notes '+c.notes+'%'))+(c.ok?'  OK':'  CHECK')+'\n';});const f=ct.chords.filter(c=>!c.ok).map(c=>c.n);t+='  needs work: '+(f.length?f.join(', '):'none ✓')+'\n';}}catch(e){}
   try{const ch=JSON.parse(localStorage.getItem('pluckRepCheck')||'null');if(ch){t+='\nLast string check ('+ch.date+') — '+ch.chord+':\n';['g','C','E','A'].forEach((L,i)=>{t+='  '+L+': '+(ch.rang[i]?'rings':'MUTED')+'\n';});}}catch(e){}
@@ -326,9 +331,9 @@ function renderReport(){const el=$('report');if(el)el.value=buildReport();}
 function save(){
   try{
     if(window._recCos!=null)localStorage.setItem('pluckChordCos',String(window._recCos));
-    if(window._recRise!=null)localStorage.setItem('pluckOnsetRise',String(window._recRise));
-    if(window._recMin!=null)localStorage.setItem('pluckOnsetMin',String(window._recMin));
-    $('saved').textContent='Saved ✓ — Chord Coach & Song Mode will use these. (cos '+(localStorage.getItem('pluckChordCos')||'-')+', onset '+(localStorage.getItem('pluckOnsetRise')||'-')+'/'+(localStorage.getItem('pluckOnsetMin')||'-')+')';renderReport();
+    if(window._on){localStorage.setItem('pluckOnRise',String(window._on.rise));localStorage.setItem('pluckOnFloor',String(window._on.floor));localStorage.setItem('pluckOnRatio',String(window._on.ratio));localStorage.setItem('pluckOnRefract',String(window._on.refract));}
+    loadOnsetCfg();
+    $('saved').textContent='Saved ✓ — calibrated for this phone. Chord Coach, Song Mode & Lessons will use these. Re-run the strum test to confirm.';renderReport();
   }catch(e){$('saved').textContent='could not save';}
 }
 

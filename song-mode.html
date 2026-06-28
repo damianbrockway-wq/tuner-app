@@ -149,7 +149,10 @@ const CHORDS={
 };
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
-const CHORDCOS=CFG('pluckChordCos',0.5), ONSETRISE=CFG('pluckOnsetRise',0.0009), ONSETMIN=CFG('pluckOnsetMin',0.0015);
+const CHORDCOS=CFG('pluckChordCos',0.5);
+let ON={rise:0.0008,floor:0.0015,ratio:2.0,refract:0.18};
+function loadOnsetCfg(){ON={rise:CFG('pluckOnRise',0.0008),floor:CFG('pluckOnFloor',0.0015),ratio:CFG('pluckOnRatio',2.0),refract:CFG('pluckOnRefract',0.18)};}
+loadOnsetCfg();
 
 /* ---------- songs (chord-only, simplified arrangements) ---------- */
 const SONGS=[
@@ -269,6 +272,7 @@ function chime(){
 async function toggleMic(){
   if(running)return stopMic();
   try{
+    loadOnsetCfg();
     const ctx=ensureCtx();if(ctx.state!=='running')await ctx.resume();
     await connectMic();
     running=true;ema=null;matchHold=0;celebrateUntil=0;
@@ -323,8 +327,8 @@ function detectOnset(rms){
   if(envO===null){envO=rms;envPrev=rms;slowEnvO=rms;return;}
   envO=envO*0.6+rms*0.4;const rise=envO-envPrev;
   slowEnvO=slowEnvO*0.9+rms*0.1;
-  const riseHit=rise>0.0008&&envO>0.0015, ratioHit=rms>0.004&&slowEnvO>1e-5&&rms/slowEnvO>2.0;
-  if((riseHit||ratioHit)&&tNow-lastOnset>0.18){
+  const riseHit=rise>ON.rise&&envO>ON.floor, ratioHit=rms>ON.floor*2.5&&slowEnvO>1e-5&&rms/slowEnvO>ON.ratio;
+  if((riseHit||ratioHit)&&tNow-lastOnset>ON.refract){
     lastOnset=tNow;onsets.push(tNow);if(onsets.length>60)onsets.shift();if(calibrating)calOnsets.push(tNow);
     const el=$('strum');if(el){el.style.opacity='1';clearTimeout(strumT);strumT=setTimeout(()=>{el.style.opacity='0';},140);}
   }

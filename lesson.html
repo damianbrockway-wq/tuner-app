@@ -94,6 +94,9 @@ const CHORDS={
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
 const CHORDCOS=CFG('pluckChordCos',0.5);
+let ON={rise:0.0008,floor:0.0015,ratio:2.0,refract:0.18};
+function loadOnsetCfg(){ON={rise:CFG('pluckOnRise',0.0008),floor:CFG('pluckOnFloor',0.0015),ratio:CFG('pluckOnRatio',2.0),refract:CFG('pluckOnRefract',0.18)};}
+loadOnsetCfg();
 const $=id=>document.getElementById(id);
 
 const LESSONS={
@@ -209,7 +212,7 @@ async function ensureMic(){
     const src=audioCtx.createMediaStreamSource(micStream);
     analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
     micStream.getAudioTracks().forEach(t=>{t.onended=()=>{if(running){running=false;ensureMic();}};});
-    running=true;ema=null;envO=null;keepAwake();
+    loadOnsetCfg();running=true;ema=null;envO=null;keepAwake();
     if(pendingMetro){const s=pendingMetro;pendingMetro=null;startMetro(s);}
     if(!watchTimer)watchTimer=setInterval(()=>{if(running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});keepAwake();},1200);
     loop();
@@ -256,7 +259,7 @@ function loop(){
   // onset (combined)
   if(envO===null){envO=rms;envPrev=rms;slowEnvO=rms;}
   envO=envO*0.6+rms*0.4;const rise=envO-envPrev;slowEnvO=slowEnvO*0.9+rms*0.1;
-  const onset=((rise>0.0008&&envO>0.0015)||(rms>0.004&&slowEnvO>1e-5&&rms/slowEnvO>2.0))&&now-lastOnset>180;
+  const onset=((rise>ON.rise&&envO>ON.floor)||(rms>ON.floor*2.5&&slowEnvO>1e-5&&rms/slowEnvO>ON.ratio))&&now-lastOnset>ON.refract*1000;
   if(onset)lastOnset=now;
   envPrev=envO;
 
