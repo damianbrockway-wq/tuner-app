@@ -323,7 +323,7 @@ function detectOnset(rms){
   if(envO===null){envO=rms;envPrev=rms;return;}
   envO=envO*0.6+rms*0.4;
   const rise=envO-envPrev;
-  if(rise>ONSETRISE && envO>ONSETMIN && tNow-lastOnset>0.09){
+  if(rise>ONSETRISE && envO>ONSETMIN && tNow-lastOnset>0.18){
     lastOnset=tNow;onsets.push(tNow);if(onsets.length>60)onsets.shift();if(calibrating)calOnsets.push(tNow);
     const el=$('strum');if(el){el.style.opacity='1';clearTimeout(strumT);strumT=setTimeout(()=>{el.style.opacity='0';},140);}
   }

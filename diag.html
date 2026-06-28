@@ -198,7 +198,7 @@ function analyze(){
   if(envO===null){envO=rms;envPrev=rms;}
   envO=envO*0.6+rms*0.4;
   const rise=envO-envPrev;let onset=false;
-  if(rise>ONSETRISE&&envO>ONSETMIN&&audioCtx.currentTime-lastOnset>0.09){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
+  if(rise>ONSETRISE&&envO>ONSETMIN&&audioCtx.currentTime-lastOnset>0.18){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
   envPrev=envO;
   return {rms,rise,env:envO,chroma:ema,onset};
 }
