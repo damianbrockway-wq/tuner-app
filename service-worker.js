@@ -1,4 +1,4 @@
-const CACHE = 'tuner-v40';
+const CACHE = 'tuner-v42';
 const ASSETS = [
   './',
   './index.html',

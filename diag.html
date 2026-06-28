@@ -357,6 +357,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 $('copyReport').addEventListener('click',()=>{const t=buildReport();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}).catch(()=>{$('report').focus();$('report').select();});}else{$('report').focus();$('report').select();try{document.execCommand('copy');}catch(e){}$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}});
 renderReport();
 $('copyBtn').addEventListener('click',()=>{$('summary').focus();$('summary').select();});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 </script>
 </body>
 </html>

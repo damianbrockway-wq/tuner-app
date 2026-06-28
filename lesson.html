@@ -91,7 +91,8 @@ const CHORDS={
   'C7':{frets:[0,0,0,1],fingers:[0,0,0,1],pcs:[0,4,7,10],notes:['C','E','G','B♭']},
   'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5],notes:['G','B','D','F']},
   'D' :{frets:[2,2,2,0],fingers:[1,2,3,0],pcs:[2,6,9],   notes:['D','F♯','A']},
-  'A' :{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4],   notes:['A','C♯','E']}
+  'A' :{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4],   notes:['A','C♯','E']},
+  'Bb':{frets:[3,2,1,1],fingers:[3,2,1,1],pcs:[10,2,5],  notes:['B♭','D','F']}
 };
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
@@ -154,9 +155,16 @@ const LESSONS={
   {type:'seq', seq:['C7','F','G7','C7'], step:'Step 3 · The change', title:'C7 · F · G7 · C7', body:"These three are the engine of the blues. Drill the moves between them — get each shape, then strum. It advances each time it hears the right chord."},
   {type:'seq', seq:['C7','C7','F','C7','G7','F','C7','G7'], step:'Step 4 · 12-bar blues', title:'Play the blues', body:"A shortened 12-bar blues in C, using C7, F and G7. This pattern is behind thousands of blues and rock'n'roll songs. Strum it through and feel that bluesy swing."},
   {type:'done', step:'Done', title:'🎉 Lesson 6 complete!', body:"You learned C7 and G7 and played a 12-bar blues. You now know nine chords and the secret to that bluesy sound. Outstanding work."}
+  ],
+  7:[
+   {type:'info', step:'Lesson 7', title:'Barre chords: your next milestone', body:"Time for a big one: the barre chord. Instead of one finger per string, you'll press a single finger flat across several strings at once, holding them all down like a movable bar. It's honestly the hardest thing you've tried so far, and your hand may grumble at first — that's completely normal. Every player struggles with their first barre. Take it slowly, and a little practice each day will get you there."},
+   {type:'chord', chord:'Bb', step:'Step 1 · New chord', title:'This is B♭', body:"Here's the classic first barre. Lay your index finger FLAT across the E and A strings at the 1st fret, pressing both down at once — it helps to roll the finger slightly onto its bony side. Then middle finger on the C string 2nd fret, and ring finger on the g string 3rd fret. Press close to the fret, strum slowly, and check that each string rings clearly. Don't worry if it buzzes the first few times — keep adjusting and it will come."},
+   {type:'seq', seq:['Bb','F','Bb','F'], step:'Step 2 · The change', title:'B♭ ↔ F', body:"Now drill between B♭ and your old friend F — which is really just a partial barre you already know. Form B♭, strum, then relax into F and strum again. Switching back and forth like this is the fastest way to teach your hand the new shape. It advances each time it hears the right chord."},
+   {type:'seq', seq:['F','Bb','C7','F'], step:'Step 3 · A song in F', title:'Play in the key of F', body:"Here's a real progression in the key of F, using B♭ alongside two chords you already own: F and C7. This I–IV–V pattern is the backbone of countless songs. Strum it through and enjoy hearing your barre chord at work in real music."},
+   {type:'done', step:'Done', title:'🎉 Lesson 7 complete!', body:"You played your first barre chord — a genuine milestone. Barre chords are movable, so the shape you just learned unlocks playing in any key. Keep practising B♭ a little each day and it'll soon feel as natural as the rest. Brilliant work."}
  ]
 };
-const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=6)?n:1;})();
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=7)?n:1;})();
 const STEPS=LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;
@@ -233,7 +241,6 @@ function renderStep(){
   } else { // info / tune / done
     $('go').textContent = step.type==='done' ? 'Finish' : (step.type==='tune' ? 'Continue' : 'Begin');
     $('go').disabled=false;
-    if(step.type==='tune'){const a=document.createElement('a');}
   }
 }
 function renderPick(){

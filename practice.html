@@ -113,8 +113,20 @@ const Skill={
 const LMAP={1:['C','Am'],2:['F'],3:['G'],4:['Dm']};
 function learnedChords(){let o=[];for(let i=1;i<=4;i++){if(localStorage.getItem('pluckLesson'+i)==='done')o=o.concat(LMAP[i]);}o=[...new Set(o)];return o.length>=2?o:['C','Am'];}
 function allPairs(chords){const p=[];for(let i=0;i<chords.length;i++)for(let j=i+1;j<chords.length;j++)p.push([chords[i],chords[j]]);return p;}
+const DAY_MS=86400000;
+function pairPriority(a,b){
+  try{
+    const last=Skill.lastSeen(a,b);
+    if(!last)return 1000; // never practiced -> learn first
+    const best=Math.min(Skill.best(a,b),60);
+    const weakness=1-best/60;
+    const dueInterval=DAY_MS*(1+best/15);
+    const overdue=(Date.now()-last)/dueInterval;
+    return weakness*1.0+overdue*1.2;
+  }catch(e){return 0;}
+}
 function weakestPair(){const ch=learnedChords();const pairs=allPairs(ch);
-  pairs.sort((x,y)=>{const bx=Skill.best(...x),by=Skill.best(...y);if(bx!==by)return bx-by;return Skill.lastSeen(...x)-Skill.lastSeen(...y);});
+  pairs.sort((x,y)=>pairPriority(...y)-pairPriority(...x));
   return pairs[0]||['C','Am'];}
 
 /* ---------- diagram ---------- */
@@ -135,10 +147,19 @@ function pairHTML(a,b,activeName,el){
 
 /* ---------- setup view ---------- */
 let A='C',B='Am';
+function pairHint(a,b){
+  try{
+    if(!Skill.lastSeen(a,b))return ' · new — let\'s learn it';
+    const best=Math.min(Skill.best(a,b),60);
+    const dueInterval=DAY_MS*(1+best/15);
+    const overdue=(Date.now()-Skill.lastSeen(a,b))/dueInterval;
+    return overdue>1?' · due for review':' · keep it sharp';
+  }catch(e){return '';}
+}
 function showSetup(){
   $('setup').style.display='flex';$('drill').style.display='none';$('result').style.display='none';
   pairHTML(A,B,null,$('pairView'));
-  $('best').textContent='Your best: '+(Skill.best(A,B)||'—')+' changes/min'; const stEl=$('streak'); if(stEl)stEl.textContent=streakText();
+  $('best').textContent='Your best: '+(Skill.best(A,B)||'—')+' changes/min'+pairHint(A,B); const stEl=$('streak'); if(stEl)stEl.textContent=streakText();
   const ch=learnedChords();const cc=$('chips');cc.innerHTML='';let sel=[A,B];
   ch.forEach(c=>{const b=document.createElement('button');b.textContent=c;if(sel.includes(c))b.classList.add('on');
     b.onclick=()=>{ if(sel.includes(c)){sel=sel.filter(x=>x!==c);} else { sel.push(c); if(sel.length>2)sel.shift(); }
@@ -192,7 +213,7 @@ function finishDrill(){
 }
 
 /* ---------- session + streak ---------- */
-function weakestPairs(k){const pairs=allPairs(learnedChords());pairs.sort((x,y)=>{const bx=Skill.best(...x),by=Skill.best(...y);if(bx!==by)return bx-by;return Skill.lastSeen(...x)-Skill.lastSeen(...y);});return pairs.slice(0,k);}
+function weakestPairs(k){const pairs=allPairs(learnedChords());pairs.sort((x,y)=>pairPriority(...y)-pairPriority(...x));return pairs.slice(0,k);}
 function getStreak(){try{return JSON.parse(localStorage.getItem('pluckStreak')||'{}');}catch(e){return{};}}
 function streakText(){const s=getStreak();if(!s.last)return 'Practice daily to build a streak 🔥';const t=new Date().toDateString();if(s.last===t)return '🔥 '+s.count+'-day streak — done today';return '🔥 '+s.count+'-day streak — practice today to keep it';}
 function bumpStreak(){const s=getStreak(),t=new Date().toDateString();if(s.last===t)return s.count;const y=new Date(Date.now()-86400000).toDateString();const count=(s.last===y)?(s.count||0)+1:1;localStorage.setItem('pluckStreak',JSON.stringify({last:t,count}));return count;}
