@@ -115,7 +115,7 @@ const $=id=>document.getElementById(id);
 
 let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null;
 let freqBuf=null,timeBuf=null,ema=null;
-let lastOnset=0,envO=null,envPrev=0,onsetCount=0,strumT=null;
+let lastOnset=0,envO=null,envPrev=0,slowEnv=null,onsetCount=0,strumT=null;
 const ONSETRISE=0.0009, ONSETMIN=0.0015;
 let state='idle';
 // capture buffers
@@ -203,11 +203,13 @@ function analyze(){
   for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
     const lin=Math.pow(10,db/20);const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;chroma[pc]+=lin;}
   if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
-  // onset = sharp positive rise of a smoothed envelope (catches attacks during sustain)
-  if(envO===null){envO=rms;envPrev=rms;}
-  envO=envO*0.6+rms*0.4;
-  const rise=envO-envPrev;let onset=false;
-  if(rise>ONSETRISE&&envO>ONSETMIN&&audioCtx.currentTime-lastOnset>0.18){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
+  // combined onset: sharp envelope RISE or a relative JUMP above a lagging baseline (level-independent)
+  if(envO===null){envO=rms;envPrev=rms;slowEnv=rms;}
+  envO=envO*0.6+rms*0.4;const rise=envO-envPrev;
+  slowEnv=slowEnv*0.9+rms*0.1;
+  const riseHit=rise>0.0008&&envO>0.0015, ratioHit=rms>0.004&&slowEnv>1e-5&&rms/slowEnv>2.0;
+  let onset=false;
+  if((riseHit||ratioHit)&&audioCtx.currentTime-lastOnset>0.18){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
   envPrev=envO;
   return {rms,rise,env:envO,chroma:ema,onset};
 }
@@ -257,7 +259,7 @@ function loop(){
     $('csNext').textContent=(i>=3)?'See result ✓':'Next string →';
   } else if(state==='strumtest'){
     const now=performance.now();
-    $('prompt').innerHTML='Strum now! &nbsp;<b>'+onsetCount+'</b> detected &nbsp;·&nbsp; level '+a.rms.toFixed(3);
+    $('prompt').innerHTML='<span style="font-size:30px;font-weight:800">'+onsetCount+'</span> strums &nbsp;·&nbsp; level <b>'+a.rms.toFixed(3)+'</b>';
     strumStats.peak=Math.max(strumStats.peak,a.rms);
     if(now-strumStats.t0>12000){finishStrumTest();}
   }
@@ -287,7 +289,7 @@ function finishChordTest(){
   renderReport();
 }
 
-function startStrumTest(){if(!running)return;setActive('strumTest');$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;envO=null;envPrev=0;lastOnset=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
+function startStrumTest(){if(!running)return;setActive('strumTest');$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;envO=null;envPrev=0;slowEnv=null;lastOnset=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
 function finishStrumTest(){
   setActive('');state='live';$('prompt').textContent='Strum test done';
   const n=onsetCount;
