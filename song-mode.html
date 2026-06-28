@@ -148,6 +148,8 @@ const CHORDS={
   'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5], notes:['G','B','D','F']}
 };
 const POOL=Object.keys(CHORDS);
+const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
+const CHORDCOS=CFG('pluckChordCos',0.5), ONSETFACTOR=CFG('pluckOnsetFactor',1.6), ONSETFLOOR=CFG('pluckOnsetFloor',0.006);
 
 /* ---------- songs (chord-only, simplified arrangements) ---------- */
 const SONGS=[
@@ -319,7 +321,7 @@ function tickTempo(){
 function detectOnset(rms){
   const tNow=audioCtx.currentTime;
   if(rmsBase===null){rmsBase=rms;rmsPrev=rms;return;}
-  const rising=rms>=rmsPrev, thr=rmsBase*1.6+0.006;
+  const rising=rms>=rmsPrev, thr=rmsBase*ONSETFACTOR+ONSETFLOOR;
   if(rms>thr && rising && rms>0.008 && tNow-lastOnset>0.08){
     lastOnset=tNow;onsets.push(tNow);if(onsets.length>60)onsets.shift();if(calibrating)calOnsets.push(tNow);
     const el=$('strum');if(el){el.style.opacity='1';clearTimeout(strumT);strumT=setTimeout(()=>{el.style.opacity='0';},140);}
@@ -405,7 +407,7 @@ function loop(){
   const sTarget=cosine(ema,TPL[target]);
   let best=target,bestS=-1;for(const n of POOL){const sc=cosine(ema,TPL[n]);if(sc>bestS){bestS=sc;best=n;}}
   const tones=CHORDS[target].pcs;const present=tones.filter(pc=>ema[pc]>0.25*maxc).length;const needed=Math.max(2,tones.length-1);
-  const good=sTarget>0.5 && (best===target||sTarget>=bestS-0.07) && present>=needed;
+  const good=sTarget>CHORDCOS && (best===target||sTarget>=bestS-0.07) && present>=needed;
   $('conf').style.width=Math.min(100,Math.round(sTarget*120))+'%';
   $('dbg').textContent='lvl '+rms.toFixed(3)+' · '+best+' '+Math.round(bestS*100)+'% · '+target+' '+Math.round(sTarget*100)+'% · '+present+'/'+tones.length;
   if(good){matchHold+=dt;if(!inCountIn&&!calibrating){$('name').style.color='var(--good)';$('state').textContent=mode==='wait'?'nice — hold it':'on chord ✓';}}

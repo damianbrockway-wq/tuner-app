@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pluck · Diagnostics</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#08060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pluck">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{--bg:#08060f;--txt:#eef1ff;--muted:#9aa0c8;--accent:#7c6cff;--good:#27e0a0;--warn:#ffc23d;--bad:#ff5d73}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 16px);-webkit-user-select:none;user-select:none}
+  .wrap{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
+  .brand{font-size:15px;font-weight:700}.brand b{color:#9d8bff}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px}
+  .big{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+  .lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .meter{height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:6px}
+  .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--good))}
+  .dot{display:inline-block;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.18);vertical-align:middle}
+  .dot.on{background:var(--good);box-shadow:0 0 14px var(--good)}
+  .chroma{display:flex;gap:3px;align-items:flex-end;height:54px;margin-top:8px}
+  .chroma .b{flex:1;background:#3a3f66;border-radius:3px 3px 0 0;position:relative;min-height:2px}
+  .chroma .b.lit{background:var(--good)}
+  .chroma .b span{position:absolute;bottom:-15px;left:0;right:0;text-align:center;font-size:8px;color:var(--muted)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  button{padding:11px 16px;border:0;border-radius:13px;font-size:14px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(90deg,#7c6cff,#5b8cff)}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:var(--muted)}
+  button.live{background:linear-gradient(90deg,#ff5d73,#ff7a4d)}
+  .prompt{font-size:22px;font-weight:800;text-align:center;min-height:28px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  th,td{text-align:left;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.08);font-variant-numeric:tabular-nums}
+  th{color:var(--muted);font-size:10px;text-transform:uppercase}
+  td.ok{color:var(--good)}td.no{color:var(--bad)}
+  textarea{width:100%;height:150px;background:#11142a;color:var(--txt);border:1px solid rgba(255,255,255,.12);border-radius:10px;font-size:11px;font-family:ui-monospace,monospace;padding:8px;-webkit-user-select:text;user-select:text}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">🔬 <b>DIAGNOSTICS</b></div><span style="width:40px"></span></div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div><div class="lbl">Mic level</div><div class="big" id="lvl">—</div></div>
+      <div style="text-align:center"><div class="lbl">Onset</div><div class="big"><span class="dot" id="odot"></span></div><div class="lbl" id="ocount">0 strums</div></div>
+      <div style="text-align:right"><div class="lbl">Best chord</div><div class="big" id="best">—</div><div class="lbl" id="bestpct"></div></div>
+    </div>
+    <div class="meter"><i id="lvlbar"></i></div>
+    <div class="chroma" id="chroma"></div>
+    <div style="height:14px"></div>
+    <div class="hint" id="onsetdbg" style="margin-top:6px"></div>
+  </div>
+
+  <div class="row">
+    <button id="micBtn">Start mic</button>
+    <button class="ghost" id="chordTest">Test chords</button>
+    <button class="ghost" id="strumTest">Test strums</button>
+  </div>
+
+  <div class="prompt" id="prompt"></div>
+
+  <div class="card" id="resultsCard" style="display:none">
+    <div class="lbl">Results</div>
+    <div id="results"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="saveBtn">Save tuned settings</button>
+      <button class="ghost" id="copyBtn">Select summary</button>
+    </div>
+    <div style="height:8px"></div>
+    <textarea id="summary" readonly></textarea>
+    <div class="hint" id="saved"></div>
+  </div>
+  <div class="hint">Tip: tap <b>Test chords</b> and play each chord it asks for, then <b>Test strums</b> and strum 10 times. Then <b>Save tuned settings</b> — Chord Coach and Song Mode will use them. Or paste the summary to share.</div>
+</div>
+
+<script>
+const CHORDS={
+  'C':{pcs:[0,4,7]},'Am':{pcs:[9,0,4]},'F':{pcs:[5,9,0]},'G':{pcs:[7,11,2]},
+  'C7':{pcs:[0,4,7,10]},'G7':{pcs:[7,11,2,5]},'Dm':{pcs:[2,5,9]},'Em':{pcs:[4,7,11]},
+  'D':{pcs:[2,6,9]},'A':{pcs:[9,1,4]},'E':{pcs:[4,8,11]},'F#m':{pcs:[1,6,9]}};
+const POOL=Object.keys(CHORDS);
+const TPL={};POOL.forEach(n=>{const t=new Array(12).fill(0);CHORDS[n].pcs.forEach(p=>t[p]=1);TPL[n]=t;});
+const TESTSEQ=['C','Am','F','G','C7','G7','Dm','Em','D','A','E','F#m'];
+const NOTE=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const $=id=>document.getElementById(id);
+
+let audioCtx=null,analyser=null,micStream=null,running=false,rafId=null;
+let freqBuf=null,timeBuf=null,ema=null;
+let lastOnset=0,rmsBase=null,rmsPrev=0,onsetCount=0,strumT=null;
+let state='idle';
+// capture buffers
+let cap=null;            // chord-test accumulator
+let chordResults=[];     // [{name,n,avgCos,argmaxPct,avgNotes}]
+let testIdx=0,phase='',phaseT=0;
+let strumStats=null;
+
+function cosine(a,b){let d=0,x=0,y=0;for(let i=0;i<12;i++){d+=a[i]*b[i];x+=a[i]*a[i];y+=b[i]*b[i];}return(x&&y)?d/Math.sqrt(x*y):0;}
+
+// build chroma bars
+const cbars=[];
+NOTE.forEach(n=>{const b=document.createElement('div');b.className='b';b.innerHTML='<span>'+n+'</span>';$('chroma').appendChild(b);cbars.push(b);});
+
+async function toggleMic(){
+  if(running){stop();return;}
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state!=='running')await audioCtx.resume();
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
+    const src=audioCtx.createMediaStreamSource(micStream);
+    analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
+    running=true;state='live';rmsBase=null;ema=null;onsetCount=0;
+    $('micBtn').textContent='Stop mic';$('micBtn').classList.add('live');
+    loop();
+  }catch(e){$('prompt').textContent='mic blocked';}
+}
+function stop(){running=false;cancelAnimationFrame(rafId);if(micStream)micStream.getTracks().forEach(t=>t.stop());$('micBtn').textContent='Start mic';$('micBtn').classList.remove('live');state='idle';}
+
+function analyze(){
+  const bins=analyser.frequencyBinCount;
+  if(!freqBuf||freqBuf.length!==bins)freqBuf=new Float32Array(bins);
+  if(!timeBuf||timeBuf.length!==analyser.fftSize)timeBuf=new Float32Array(analyser.fftSize);
+  analyser.getFloatFrequencyData(freqBuf);analyser.getFloatTimeDomainData(timeBuf);
+  let rms=0;for(let i=0;i<timeBuf.length;i++)rms+=timeBuf[i]*timeBuf[i];rms=Math.sqrt(rms/timeBuf.length);
+  const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);
+  for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
+    const lin=Math.pow(10,db/20);const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;chroma[pc]+=lin;}
+  if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
+  // onset (rms rise)
+  if(rmsBase===null){rmsBase=rms;rmsPrev=rms;}
+  const rising=rms>=rmsPrev,thr=rmsBase*1.6+0.006;
+  let onset=false;
+  if(rms>thr&&rising&&rms>0.008&&audioCtx.currentTime-lastOnset>0.08){onset=true;lastOnset=audioCtx.currentTime;onsetCount++;}
+  rmsBase=rms>rmsBase?rmsBase*0.80+rms*0.20:rmsBase*0.96+rms*0.04;rmsPrev=rms;
+  return {rms,thr,chroma:ema,onset};
+}
+
+function loop(){
+  const a=analyze();
+  const maxc=Math.max(...a.chroma,1e-9);
+  // meters
+  $('lvl').textContent=a.rms.toFixed(3);$('lvlbar').style.width=Math.min(100,a.rms*400)+'%';
+  cbars.forEach((b,i)=>{b.style.height=Math.max(2,a.chroma[i]/maxc*52)+'px';b.classList.toggle('lit',a.chroma[i]>0.45*maxc);});
+  let best='—',bestS=0;for(const n of POOL){const s=cosine(a.chroma,TPL[n]);if(s>bestS){bestS=s;best=n;}}
+  $('best').textContent=a.rms<0.01?'—':best;$('bestpct').textContent=a.rms<0.01?'':Math.round(bestS*100)+'%';
+  if(a.onset){$('odot').classList.add('on');clearTimeout(strumT);strumT=setTimeout(()=>$('odot').classList.remove('on'),130);}
+  $('ocount').textContent=onsetCount+' strums';
+  $('onsetdbg').textContent='rms '+a.rms.toFixed(3)+' · thr '+a.thr.toFixed(3)+' · base '+rmsBase.toFixed(3);
+
+  // chord test state machine
+  if(state==='chordtest'){
+    const now=performance.now();
+    if(phase==='ready'){
+      $('prompt').textContent='Play & hold:  '+TESTSEQ[testIdx];
+      if(now-phaseT>1600){phase='capture';phaseT=now;cap={n:0,cos:0,arg:0,notes:0};}
+    } else if(phase==='capture'){
+      $('prompt').textContent='● recording '+TESTSEQ[testIdx]+'…';
+      if(a.rms>0.012){const tgt=TESTSEQ[testIdx];const cs=cosine(a.chroma,TPL[tgt]);
+        const present=CHORDS[tgt].pcs.filter(pc=>a.chroma[pc]>0.25*maxc).length/CHORDS[tgt].pcs.length;
+        cap.n++;cap.cos+=cs;cap.arg+=(best===tgt?1:0);cap.notes+=present;}
+      if(now-phaseT>3000){
+        const r=cap.n>3?{name:TESTSEQ[testIdx],n:cap.n,avgCos:cap.cos/cap.n,argmaxPct:Math.round(100*cap.arg/cap.n),avgNotes:cap.notes/cap.n}
+                       :{name:TESTSEQ[testIdx],n:cap.n,avgCos:0,argmaxPct:0,avgNotes:0,nosig:true};
+        chordResults.push(r);testIdx++;
+        if(testIdx>=TESTSEQ.length){finishChordTest();}else{phase='ready';phaseT=now;}
+      }
+    }
+  } else if(state==='strumtest'){
+    const now=performance.now();
+    $('prompt').textContent='Strum 10 times…  ('+onsetCount+' detected)';
+    strumStats.peak=Math.max(strumStats.peak,a.rms);
+    if(now-strumStats.t0>9000){finishStrumTest();}
+  }
+  rafId=requestAnimationFrame(loop);
+}
+
+function startChordTest(){if(!running)return;state='chordtest';testIdx=0;phase='ready';phaseT=performance.now();chordResults=[];$('resultsCard').style.display='none';}
+function finishChordTest(){
+  state='live';$('prompt').textContent='Chord test done';
+  // recommend cosine threshold
+  const good=chordResults.filter(r=>!r.nosig&&r.argmaxPct>=70&&r.avgCos>=0.55);
+  let rec= good.length? Math.max(0.45, Math.min(...good.map(r=>r.avgCos))*0.8) : 0.5;
+  rec=Math.round(rec*100)/100;
+  window._recCos=rec;
+  let html='<table><tr><th>chord</th><th>score</th><th>argmax</th><th>notes</th><th></th></tr>';
+  let txt='CHORD TEST (avg over held chord)\n';
+  chordResults.forEach(r=>{
+    const ok=!r.nosig&&r.argmaxPct>=70&&r.avgCos>=0.55;
+    html+='<tr><td>'+r.name+'</td><td>'+(r.nosig?'no signal':r.avgCos.toFixed(2))+'</td><td>'+(r.nosig?'-':r.argmaxPct+'%')+'</td><td>'+(r.nosig?'-':Math.round(r.avgNotes*100)+'%')+'</td><td class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</td></tr>';
+    txt+='  '+r.name.padEnd(4)+' cos '+(r.nosig?'NO SIGNAL':r.avgCos.toFixed(2))+'  argmax '+(r.nosig?'-':r.argmaxPct+'%')+'  notes '+(r.nosig?'-':Math.round(r.avgNotes*100)+'%')+(ok?'  OK':'  CHECK')+'\n';
+  });
+  html+='</table><div class="hint" style="margin-top:8px">Recommended chord threshold: <b>'+rec+'</b></div>';
+  txt+='Recommended chord cosine threshold: '+rec+'\n';
+  $('results').innerHTML=html;$('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
+}
+
+function startStrumTest(){if(!running)return;state='strumtest';onsetCount=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
+function finishStrumTest(){
+  state='live';$('prompt').textContent='Strum test done';
+  const n=onsetCount;
+  let verdict, recFactor=1.6, recFloor=0.006;
+  if(n<8){verdict='under-detecting → more sensitive';recFactor=1.3;recFloor=0.004;}
+  else if(n>14){verdict='over-detecting → less sensitive';recFactor=2.0;recFloor=0.010;}
+  else {verdict='good';}
+  window._recFactor=recFactor;window._recFloor=recFloor;
+  const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+strumStats.peak.toFixed(3)+'\n  verdict: '+verdict+'\n  recommended onset factor '+recFactor+', floor '+recFloor+'\n';
+  $('results').innerHTML='<table><tr><th>detected</th><th>peak rms</th><th>verdict</th></tr><tr><td>'+n+'</td><td>'+strumStats.peak.toFixed(3)+'</td><td>'+verdict+'</td></tr></table><div class="hint" style="margin-top:8px">Recommended onset factor <b>'+recFactor+'</b>, floor <b>'+recFloor+'</b></div>';
+  $('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
+}
+
+function save(){
+  try{
+    if(window._recCos!=null)localStorage.setItem('pluckChordCos',String(window._recCos));
+    if(window._recFactor!=null)localStorage.setItem('pluckOnsetFactor',String(window._recFactor));
+    if(window._recFloor!=null)localStorage.setItem('pluckOnsetFloor',String(window._recFloor));
+    $('saved').textContent='Saved ✓ — Chord Coach & Song Mode will use these. (cos '+(localStorage.getItem('pluckChordCos')||'-')+', onset '+(localStorage.getItem('pluckOnsetFactor')||'-')+'/'+(localStorage.getItem('pluckOnsetFloor')||'-')+')';
+  }catch(e){$('saved').textContent='could not save';}
+}
+
+$('micBtn').addEventListener('click',toggleMic);
+$('chordTest').addEventListener('click',startChordTest);
+$('strumTest').addEventListener('click',startStrumTest);
+$('saveBtn').addEventListener('click',save);
+$('copyBtn').addEventListener('click',()=>{$('summary').focus();$('summary').select();});
+</script>
+</body>
+</html>
