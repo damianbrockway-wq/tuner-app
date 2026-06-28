@@ -125,20 +125,41 @@ const LESSONS={
   {type:'metro', chord:'C', bpm:70, beats:8, pattern:'island', step:'Step 3 · The island strum', title:'D · D U · U D U', body:"Hold C and follow the arrows with the beat: down, down-up, up-down-up. Strum along — no grading, just feel it. Tap ♪ Beat to hear it again."},
   {type:'seq', seq:['C','G','Am','F'], step:'Step 4 · Four-chord song', title:'C · G · Am · F', body:"The famous four-chord loop — hundreds of songs use it. Play each chord; add the island strum if you can."},
   {type:'done', step:'Done', title:'🎉 Lesson 3 complete!', body:"You learned G and the island strum, and played the four-chord loop. You now know C, Am, F and G — a whole songbook's worth. Amazing work."}
+ ],
+ 4:[
+  {type:'info', step:'Lesson 4', title:'Fingerpicking & Dm', body:"You'll learn Dm and start fingerpicking — plucking strings one at a time instead of strumming. It's how the gentle, pretty uke parts are played."},
+  {type:'chord', chord:'Dm', step:'Step 1 · New chord', title:'This is Dm', body:"Index on the E string 1st fret, middle on the g string 2nd fret, ring on the C string 2nd fret. Strum and listen for Dm."},
+  {type:'pick', chord:'C', seq:['g','C','E','A'], step:'Step 2 · Fingerpick', title:'Pluck one string at a time', body:"Hold C. Pluck the strings one by one — g, then C, then E, then A — with your thumb and fingers. We'll listen to each."},
+  {type:'pick', chord:'Am', seq:['g','C','E','A'], step:'Step 3 · Picking on Am', title:'Now on Am', body:"Hold Am and pluck g–C–E–A again. Same picking, new chord — hear how it changes."},
+  {type:'seq', seq:['C','Am','Dm','F'], step:'Step 4 · A gentle song', title:'C · Am · Dm · F', body:"A soft, pretty progression. Strum it, or fingerpick each chord if you're feeling brave."},
+  {type:'done', step:'Done', title:'🎉 Lesson 4 complete!', body:"You learned Dm and started fingerpicking. Five chords and two ways to play them — you're really playing the ukulele now."}
  ]
 };
-const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=3)?n:1;})();
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=4)?n:1;})();
 const STEPS=LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;
 
 /* ---------- diagram ---------- */
+function pitchDetect(buf,rate){
+  const n=buf.length;let rms=0;for(let i=0;i<n;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/n);
+  if(rms<0.006)return null;
+  const minLag=Math.floor(rate/1300),maxLag=Math.floor(rate/70),nsdf=new Float32Array(maxLag+1);
+  for(let tau=minLag;tau<=maxLag;tau++){let ac=0,m=0;for(let j=0;j+tau<n;j++){ac+=buf[j]*buf[j+tau];m+=buf[j]*buf[j]+buf[j+tau]*buf[j+tau];}nsdf[tau]=m>0?2*ac/m:0;}
+  let tau=minLag;while(tau<maxLag&&nsdf[tau]>0)tau++;
+  let peaks=[],mx=0;while(tau<maxLag){if(nsdf[tau]>0){let pt=tau,pv=nsdf[tau];while(tau<maxLag&&nsdf[tau]>0){if(nsdf[tau]>pv){pv=nsdf[tau];pt=tau;}tau++;}peaks.push([pt,pv]);if(pv>mx)mx=pv;}else tau++;}
+  if(!peaks.length||mx<0.5)return null;const th=mx*0.9;let pt=-1;for(const p of peaks){if(p[1]>=th){pt=p[0];break;}}if(pt<1)return null;
+  const a=nsdf[pt-1],bb=nsdf[pt],cc=nsdf[pt+1],sh=(a-cc)/(2*(a-2*bb+cc)),period=pt+(isFinite(sh)?sh:0),f=rate/period;
+  return (f>60&&f<1300)?f:null;}
+const STR_LBL=['g','C','E','A'], STR_BASE=[67,60,64,69];
+let pickPos=0,pickHold=0;
 const PAT={island:['D','','D','U','','U','D','U']};
 function patternHTML(name){const p=PAT[name];if(!p)return '';
   return '<div style="display:flex;gap:5px;justify-content:center;margin-top:6px">'+p.map(s=>'<div style="width:26px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+(s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)')+'">'+(s==='D'?'↓':s==='U'?'↑':'·')+'</div>').join('')+'</div>';}
-function diagram(ch){
+function diagram(ch,hi){
   const W=150,H=176,ml=22,mr=22,top=30,bot=12,strings=4,nF=4;
   const xs=(W-ml-mr)/(strings-1),ys=(H-top-bot)/nF;let s=`<svg class="diagram" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  if(hi!=null){const hx=ml+hi*xs;s+=`<rect x="${hx-9}" y="${top-2}" width="18" height="${H-bot-top}" rx="7" fill="rgba(124,108,255,.3)"/>`;}
   s+=`<rect x="${ml}" y="${top-4}" width="${(strings-1)*xs}" height="5" rx="2" fill="#cfd4ff"/>`;
   for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(strings-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>`;}
   const lbl=['g','C','E','A'];
@@ -162,7 +183,7 @@ function renderStep(){
   $('diagram').innerHTML=''; $('notes').innerHTML=''; $('chart').innerHTML='';
   $('name').style.display='none'; $('count').style.display='none';
   $('skip').style.display='none'; $('replay').style.display='none';
-  seqPos=0; strumCount=0; matchHold=0; celebrateUntil=0; stepStart=performance.now();
+  seqPos=0; strumCount=0; matchHold=0; pickPos=0; pickHold=0; celebrateUntil=0; stepStart=performance.now();
 
   if(step.type==='chord'){
     $('diagram').innerHTML=diagram(CHORDS[step.chord]);
@@ -185,11 +206,21 @@ function renderStep(){
     $('diagram').innerHTML=diagram(CHORDS[step.seq[0]]);
     CHORDS[step.seq[0]].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CHORDS[step.seq[0]].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
     $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
+  } else if(step.type==='pick'){
+    pickPos=0; renderPick();
+    $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
   } else { // info / tune / done
     $('go').textContent = step.type==='done' ? 'Finish' : (step.type==='tune' ? 'Continue' : 'Begin');
     $('go').disabled=false;
     if(step.type==='tune'){const a=document.createElement('a');}
   }
+}
+function renderPick(){
+  const i=STR_LBL.indexOf(step.seq[pickPos]);
+  $('diagram').innerHTML=diagram(CHORDS[step.chord], i);
+  $('notes').innerHTML='';
+  $('chart').innerHTML=''; step.seq.forEach((sname,j)=>{const d=document.createElement('div');d.className='cell'+(j<pickPos?' done':'')+(j===pickPos?' cur':'');d.textContent=sname;$('chart').appendChild(d);});
+  $('state').textContent='pluck the '+step.seq[pickPos]+' string';
 }
 function buildChart(){const c=$('chart');c.innerHTML='';step.seq.forEach((sym,i)=>{const d=document.createElement('div');d.className='cell';d.dataset.i=i;d.textContent=sym;c.appendChild(d);});}
 function setSeqTarget(){
@@ -284,6 +315,15 @@ function loop(){
       $('count').style.color=getCss('--good');setTimeout(()=>$('count').style.color='',150);
       if(strumCount>=step.count){celebrateUntil=now+700;advanceStep();}}
     maybeSkip();
+  } else if(step&&step.type==='pick'){
+    const f=pitchDetect(timeBuf,audioCtx.sampleRate);
+    const i=STR_LBL.indexOf(step.seq[pickPos]);
+    const expPc=((STR_BASE[i]+CHORDS[step.chord].frets[i])%12+12)%12;
+    if(f){const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12; if(pc===expPc)pickHold+=dt; else pickHold=Math.max(0,pickHold-dt);}
+    else pickHold=Math.max(0,pickHold-dt*0.5);
+    if(pickHold>0.18){pickHold=0; [...$('chart').children][pickPos].classList.add('done'); pickPos++; celebrate();
+      if(pickPos>=step.seq.length){celebrateUntil=now+700;advanceStep();} else {celebrateUntil=now+400;renderPick();}}
+    else maybeSkip();
   } else if(step&&(step.type==='chord'||step.type==='seq')){
     const target = step.type==='chord' ? step.chord : step.seq[seqPos];
     if(quiet){document.querySelectorAll('.notes .n').forEach(n=>n.classList.remove('lit'));$('name').style.display='none';$('state').textContent='play '+target+'…';maybeSkip();rafId=requestAnimationFrame(loop);return;}
