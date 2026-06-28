@@ -181,7 +181,7 @@ NOTE.forEach(n=>{const b=document.createElement('div');b.className='b';b.innerHT
 async function toggleMic(){
   if(running){stop();return;}
   try{
-    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();audioCtx.onstatechange=()=>{if(running&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});};}
     if(audioCtx.state!=='running')await audioCtx.resume();
     micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
     const src=audioCtx.createMediaStreamSource(micStream);
@@ -215,6 +215,7 @@ function analyze(){
 }
 
 function loop(){
+  if(running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});
   const a=analyze();
   const maxc=Math.max(...a.chroma,1e-9);
   // meters
@@ -342,6 +343,7 @@ $('strumTest').addEventListener('click',startStrumTest);
 $('checkBtn').addEventListener('click',showCheckPicker);
 $('csNext').addEventListener('click',()=>{if(state!=='chordcheck')return;csStr++;if(csStr>=4)finishCheck();});
 $('saveBtn').addEventListener('click',save);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
 $('copyReport').addEventListener('click',()=>{const t=buildReport();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}).catch(()=>{$('report').focus();$('report').select();});}else{$('report').focus();$('report').select();try{document.execCommand('copy');}catch(e){}$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}});
 renderReport();
 $('copyBtn').addEventListener('click',()=>{$('summary').focus();$('summary').select();});
