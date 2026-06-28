@@ -60,6 +60,11 @@
     <div class="hint" id="onsetdbg" style="margin-top:6px"></div>
   </div>
 
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:center"><div class="lbl">How it's doing</div><button class="ghost" id="copyReport" style="padding:6px 12px;font-size:11px">Copy report</button></div>
+    <textarea id="report" readonly style="margin-top:8px;height:170px"></textarea>
+  </div>
+
   <div class="row">
     <button id="micBtn">Start mic</button>
     <button class="ghost" id="chordTest">Test chords</button>
@@ -120,6 +125,7 @@ let strumStats=null;
 
 function cosine(a,b){let d=0,x=0,y=0;for(let i=0;i<12;i++){d+=a[i]*b[i];x+=a[i]*a[i];y+=b[i]*b[i];}return(x&&y)?d/Math.sqrt(x*y):0;}
 let lastDiagChord=null;
+let sawSignal=false;
 let csName='',csChord=null,csStr=0,csRang=[false,false,false,false],csLastStr=-1;
 function diagram(ch,hi){
   const W=150,H=178,ml=22,mr=22,top=30,bot=12,strings=4,nF=4;
@@ -162,6 +168,8 @@ function finishCheck(){
     else if(!ok)tips.push('The open <b>'+STR_LBL[i]+'</b> string isn\'t ringing — another finger is probably touching it. Keep fingers arched on their tips.');}
   html+='</table>'+(tips.length?'<div class="hint" style="margin-top:8px">'+tips.join('<br><br>')+'</div>':'<div class="hint" style="margin-top:8px;color:var(--good)">All four strings rang — clean chord! 🎉</div>');
   $('results').innerHTML=html;$('resultsCard').style.display='block';
+  try{localStorage.setItem('pluckRepCheck',JSON.stringify({date:new Date().toLocaleString(),chord:csName,rang:csRang.slice()}));}catch(e){}
+  renderReport();
 }
 
 
@@ -177,7 +185,7 @@ async function toggleMic(){
     micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
     const src=audioCtx.createMediaStreamSource(micStream);
     analyser=audioCtx.createAnalyser();analyser.fftSize=16384;analyser.smoothingTimeConstant=0;analyser.minDecibels=-95;analyser.maxDecibels=-10;src.connect(analyser);
-    running=true;state='live';rmsBase=null;ema=null;onsetCount=0;
+    running=true;state='live';envO=null;ema=null;onsetCount=0;sawSignal=false;renderReport();
     $('micBtn').textContent='Stop mic';$('micBtn').classList.add('live');
     loop();
   }catch(e){$('prompt').textContent='mic blocked';}
@@ -207,7 +215,7 @@ function loop(){
   const a=analyze();
   const maxc=Math.max(...a.chroma,1e-9);
   // meters
-  $('lvl').textContent=a.rms.toFixed(3);$('lvlbar').style.width=Math.min(100,a.rms*400)+'%';
+  $('lvl').textContent=a.rms.toFixed(3);$('lvlbar').style.width=Math.min(100,a.rms*400)+'%';if(a.rms>0.02)sawSignal=true;
   cbars.forEach((b,i)=>{b.style.height=Math.max(2,a.chroma[i]/maxc*52)+'px';b.classList.toggle('lit',a.chroma[i]>0.45*maxc);});
   let best='—',bestS=0;for(const n of POOL){const s=cosine(a.chroma,TPL[n]);if(s>bestS){bestS=s;best=n;}}
   $('best').textContent=a.rms<0.01?'—':best;$('bestpct').textContent=a.rms<0.01?'':Math.round(bestS*100)+'%';
@@ -273,6 +281,8 @@ function finishChordTest(){
   html+='</table><div class="hint" style="margin-top:8px">Recommended chord threshold: <b>'+rec+'</b></div>';
   txt+='Recommended chord cosine threshold: '+rec+'\n';
   $('results').innerHTML=html;$('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
+  try{localStorage.setItem('pluckRepChord',JSON.stringify({date:new Date().toLocaleString(),chords:chordResults.map(r=>({n:r.name,cos:r.nosig?null:+r.avgCos.toFixed(2),arg:r.argmaxPct,notes:Math.round(r.avgNotes*100),ok:!r.nosig&&r.argmaxPct>=70&&r.avgCos>=0.55,nosig:!!r.nosig}))}));}catch(e){}
+  renderReport();
 }
 
 function startStrumTest(){if(!running)return;$('checkChips').style.display='none';$('csBtns').style.display='none';$('chorddiagram').innerHTML='';lastDiagChord=null;state='strumtest';onsetCount=0;strumStats={t0:performance.now(),startCount:0,peak:0};$('resultsCard').style.display='none';}
@@ -286,15 +296,29 @@ function finishStrumTest(){
   window._recRise=recRise;window._recMin=recMin;
   const txt='STRUM TEST\n  detected '+n+' onsets (you strummed ~10)\n  peak rms '+strumStats.peak.toFixed(3)+'\n  verdict: '+verdict+'\n  recommended onset rise '+recRise+', min '+recMin+'\n';
   $('results').innerHTML='<table><tr><th>detected</th><th>peak rms</th><th>verdict</th></tr><tr><td>'+n+'</td><td>'+strumStats.peak.toFixed(3)+'</td><td>'+verdict+'</td></tr></table><div class="hint" style="margin-top:8px">Recommended onset rise <b>'+recRise+'</b>, min <b>'+recMin+'</b></div>';
+  try{localStorage.setItem('pluckRepStrum',JSON.stringify({date:new Date().toLocaleString(),n:n,peak:+strumStats.peak.toFixed(3),verdict:verdict}));}catch(e){}
+  renderReport();
   $('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
 }
 
+function buildReport(){
+  let t='PLUCK — DETECTION REPORT\n('+new Date().toLocaleString()+')\n';
+  t+='\nMic signal seen this session: '+(sawSignal?'YES':'no — tap Start mic and play')+'\n';
+  const cos=localStorage.getItem('pluckChordCos'),rise=localStorage.getItem('pluckOnsetRise'),min=localStorage.getItem('pluckOnsetMin'),lat=localStorage.getItem('pluckLat');
+  t+='\nSaved settings:\n  chord threshold: '+(cos||'(default 0.5)')+'\n  onset rise/min:  '+(rise||'(0.003)')+' / '+(min||'(0.006)')+'\n  latency:         '+(lat!=null&&lat!==''?Math.round(parseFloat(lat)*1000)+'ms':'(not set)')+'\n';
+  try{const st=JSON.parse(localStorage.getItem('pluckRepStrum')||'null');if(st)t+='\nLast strum test ('+st.date+'):\n  detected '+st.n+' of ~10  ·  '+st.verdict+'\n';}catch(e){}
+  try{const ct=JSON.parse(localStorage.getItem('pluckRepChord')||'null');if(ct){t+='\nLast chord test ('+ct.date+'):\n';ct.chords.forEach(c=>{t+='  '+String(c.n).padEnd(4)+(c.nosig?' no signal':(' cos '+c.cos+'  argmax '+c.arg+'%  notes '+c.notes+'%'))+(c.ok?'  OK':'  CHECK')+'\n';});const f=ct.chords.filter(c=>!c.ok).map(c=>c.n);t+='  needs work: '+(f.length?f.join(', '):'none ✓')+'\n';}}catch(e){}
+  try{const ch=JSON.parse(localStorage.getItem('pluckRepCheck')||'null');if(ch){t+='\nLast string check ('+ch.date+') — '+ch.chord+':\n';['g','C','E','A'].forEach((L,i)=>{t+='  '+L+': '+(ch.rang[i]?'rings':'MUTED')+'\n';});}}catch(e){}
+  if(!localStorage.getItem('pluckRepStrum')&&!localStorage.getItem('pluckRepChord')&&!localStorage.getItem('pluckRepCheck'))t+='\nNo tests run yet — tap Test chords, Test strums, or Check chord.\n';
+  return t;
+}
+function renderReport(){const el=$('report');if(el)el.value=buildReport();}
 function save(){
   try{
     if(window._recCos!=null)localStorage.setItem('pluckChordCos',String(window._recCos));
     if(window._recRise!=null)localStorage.setItem('pluckOnsetRise',String(window._recRise));
     if(window._recMin!=null)localStorage.setItem('pluckOnsetMin',String(window._recMin));
-    $('saved').textContent='Saved ✓ — Chord Coach & Song Mode will use these. (cos '+(localStorage.getItem('pluckChordCos')||'-')+', onset '+(localStorage.getItem('pluckOnsetRise')||'-')+'/'+(localStorage.getItem('pluckOnsetMin')||'-')+')';
+    $('saved').textContent='Saved ✓ — Chord Coach & Song Mode will use these. (cos '+(localStorage.getItem('pluckChordCos')||'-')+', onset '+(localStorage.getItem('pluckOnsetRise')||'-')+'/'+(localStorage.getItem('pluckOnsetMin')||'-')+')';renderReport();
   }catch(e){$('saved').textContent='could not save';}
 }
 
@@ -314,6 +338,8 @@ $('strumTest').addEventListener('click',startStrumTest);
 $('checkBtn').addEventListener('click',showCheckPicker);
 $('csNext').addEventListener('click',()=>{if(state!=='chordcheck')return;csStr++;if(csStr>=4)finishCheck();});
 $('saveBtn').addEventListener('click',save);
+$('copyReport').addEventListener('click',()=>{const t=buildReport();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}).catch(()=>{$('report').focus();$('report').select();});}else{$('report').focus();$('report').select();try{document.execCommand('copy');}catch(e){}$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}});
+renderReport();
 $('copyBtn').addEventListener('click',()=>{$('summary').focus();$('summary').select();});
 </script>
 </body>
