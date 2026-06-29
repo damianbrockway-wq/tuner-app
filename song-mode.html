@@ -305,7 +305,7 @@ function startClock(){
     const t=clockT0+i*secPerBeat, accent=(((i-cb)%beatsPerBar)+beatsPerBar)%beatsPerBar===0;
     const o=audioCtx.createOscillator(),g=audioCtx.createGain();
     o.type='square';o.frequency.value=accent?1600:1050;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.16:0.09,t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.34:0.22,t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
     o.connect(g).connect(metGain);o.start(t);o.stop(t+0.09);metOscs.push(o);
   }
 }
