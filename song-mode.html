@@ -90,6 +90,11 @@
   .beatdot.on{animation:beat .22s ease-out}
   @keyframes beat{0%{transform:scale(1.9);background:var(--accent);box-shadow:0 0 16px var(--accent)}100%{transform:scale(1);background:rgba(255,255,255,.18)}}
   .count{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);z-index:6;font-size:120px;font-weight:800;color:#fff;text-shadow:0 0 40px var(--accent);display:none}
+  .tmeter{position:relative;width:210px;height:12px;border-radius:6px;background:rgba(255,255,255,.08);margin:4px auto 0}
+  .tmeter .tzone{position:absolute;left:42%;width:16%;top:0;bottom:0;background:rgba(39,224,160,.32);border-radius:3px}
+  .tmeter>i{position:absolute;top:-3px;width:4px;height:18px;border-radius:2px;background:#fff;left:50%;transform:translateX(-50%);transition:left .1s,background .1s}
+  .tmeter .tlbl{position:absolute;top:-15px;font-size:9px;color:var(--muted)}
+  .tmeter .tl{left:0}.tmeter .tr{right:0}
 </style>
 </head>
 <body>
@@ -118,6 +123,7 @@
     <div class="notes" id="notes"></div>
     <div class="beatrow"><span class="beatdot" id="beatdot"></span><div class="state" id="state">tap Start</div><span id="verdict" style="font-size:11px;font-weight:800;letter-spacing:1px"></span><span id="strum" style="font-size:11px;font-weight:800;color:var(--good);opacity:0;transition:opacity .1s">● STRUM</span></div>
     <div id="timing" style="font-size:12px;font-weight:700;color:var(--muted);height:15px"></div>
+    <div class="tmeter" id="tmeter" style="display:none"><div class="tlbl tl">early</div><div class="tzone"></div><i id="tneedle"></i><div class="tlbl tr">late</div></div>
     <div class="bar"><i id="conf"></i></div>
     <div class="chart" id="chart"></div>
     <div class="tempobar" id="tempobar" style="display:none;flex-wrap:wrap;justify-content:center"><span>Tempo</span><input type="range" id="bpm" min="60" max="160" value="90"><span class="bpm" id="bpmlbl">90 BPM</span><label class="cin"><input type="checkbox" id="cin" checked>count-in</label><label class="cin"><input type="checkbox" id="autotempo">Auto</label><span>🔊</span><input type="range" id="metvol" min="0" max="100" value="70" style="width:64px"><button class="ghost" id="calBtn" style="padding:6px 12px;font-size:11px">Calibrate</button><span class="bpm" id="latlbl" style="min-width:56px">lat 0ms</span></div>
@@ -284,7 +290,7 @@ async function toggleMic(){
     loop();
   }catch(e){$('state').textContent='mic blocked';}
 }
-function stopMic(){
+function stopMic(){const _tm=$('tmeter');if(_tm)_tm.style.display='none';
   running=false;cancelAnimationFrame(rafId);
   if(watchTimer){clearInterval(watchTimer);watchTimer=null;}
   stopClock();releaseWake();if(micStream)micStream.getTracks().forEach(t=>t.stop());
@@ -337,19 +343,23 @@ function tickTempo(){
 }
 
 /* ---------- onset detection + strum-timing grading (Phase 2) ---------- */
-function detectOnset(rms){
+function detectOnset(rms, strumLike){
   const tNow=audioCtx.currentTime;
   if(envO===null){envO=rms;envPrev=rms;slowEnvO=rms;return;}
   envO=envO*0.6+rms*0.4;const rise=envO-envPrev;
   slowEnvO=slowEnvO*0.9+rms*0.1;
   const riseHit=rise>ON.rise&&envO>ON.floor, ratioHit=rms>ON.floor*2.5&&slowEnvO>1e-5&&rms/slowEnvO>ON.ratio;
-  if((riseHit||ratioHit)&&tNow-lastOnset>ON.refract){
+  if((riseHit||ratioHit)&&tNow-lastOnset>ON.refract&&strumLike){
     lastOnset=tNow;onsets.push(tNow);if(onsets.length>60)onsets.shift();if(calibrating)calOnsets.push(tNow);
     const el=$('strum');if(el){el.style.opacity='1';clearTimeout(strumT);strumT=setTimeout(()=>{el.style.opacity='0';},140);}
   }
   envPrev=envO;
   const od=$('odbg');if(od)od.textContent='lvl '+rms.toFixed(3)+' · env '+envO.toFixed(3)+' · strums '+onsets.length;
 }
+function updateMeter(bd,v){const m=$('tmeter'),nd=$('tneedle');if(!m)return;m.style.display='block';
+  if(bd===null){nd.style.left='50%';nd.style.background='var(--muted)';return;}
+  const pos=Math.max(3,Math.min(97,50+(bd/0.18)*48));nd.style.left=pos+'%';
+  nd.style.background=v==='on'?'var(--good)':v==='early'?'var(--warn)':'#6cb8ff';}
 function showVerdict(v){
   const m={on:['ON TIME','var(--good)'],early:['EARLY','var(--warn)'],late:['LATE','#6cb8ff'],miss:['MISS','var(--muted)']};
   const x=m[v];$('verdict').textContent=x[0];$('verdict').style.color=x[1];
@@ -366,7 +376,7 @@ function judgeBeats(){
     let v;
     if(Math.abs(bd)<=lateW){beatStats.played++;if(Math.abs(bd)<=onW){v='on';beatStats.onTime++;}else v=bd<0?'early':'late';}
     else v='miss';
-    beatStats.total++;showVerdict(v);
+    beatStats.total++;showVerdict(v);updateMeter(v==='miss'?null:bd,v);
   }
 }
 async function calibrate(){
@@ -408,11 +418,11 @@ function loop(){
   if(!timeBuf||timeBuf.length!==analyser.fftSize)timeBuf=new Float32Array(analyser.fftSize);
   analyser.getFloatFrequencyData(freqBuf);analyser.getFloatTimeDomainData(timeBuf);
   let rms=0;for(let i=0;i<timeBuf.length;i++)rms+=timeBuf[i]*timeBuf[i];rms=Math.sqrt(rms/timeBuf.length);
-  const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);
+  const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);let lowBandE=0,clickBandE=0;
   for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
-    const lin=Math.pow(10,db/20);const midi=69+12*Math.log2(f/440);const pc=((Math.round(midi)%12)+12)%12;chroma[pc]+=lin;}
+    const lin=Math.pow(10,db/20);if(f>=130&&f<=700)lowBandE+=lin;else if(f>=1000&&f<=1850)clickBandE+=lin;const midi=69+12*Math.log2(f/440);const pc=((Math.round(midi)%12)+12)%12;chroma[pc]+=lin;}
   if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
-  detectOnset(rms);
+  detectOnset(rms, lowBandE>clickBandE*0.7);
   if(mode==='tempo'&&clockOn&&!calibrating)judgeBeats();
   if(now<celebrateUntil){rafId=requestAnimationFrame(loop);return;}
   const maxc=Math.max(...ema);
@@ -451,6 +461,9 @@ function songComplete(){
   running=false;cancelAnimationFrame(rafId);if(watchTimer){clearInterval(watchTimer);watchTimer=null;}stopClock();releaseWake();
   if(micStream)micStream.getTracks().forEach(t=>t.stop());
   $('startBtn').textContent=mode==='tempo'?'Play':'Start';$('startBtn').classList.remove('live');
+  if(beatStats.total>0){const pct=Math.round(100*beatStats.onTime/beatStats.total);let best=0,nb=false;
+    try{const o=JSON.parse(localStorage.getItem('pluckSongTime')||'{}');best=o[SONG.title]||0;if(pct>best){best=pct;nb=true;o[SONG.title]=pct;localStorage.setItem('pluckSongTime',JSON.stringify(o));}}catch(e){}
+    $('state').innerHTML='🎉 '+pct+'% in time'+(nb?' — new best!':' · best '+best+'%');}
 }
 
 /* ---------- wiring ---------- */
