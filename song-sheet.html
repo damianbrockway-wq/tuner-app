@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Pluck · Song Sheet</title>
+<title>Pluck · Song Sheets</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#08060f">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,8 +25,11 @@
   .top{display:flex;align-items:center;justify-content:space-between}
   a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
   .brand{font-size:15px;font-weight:700}.brand b{color:#9d8bff}
+  .picker{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .picker button{font-size:12px;font-weight:800;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--muted);cursor:pointer}
+  .picker button.on{background:linear-gradient(90deg,#7c6cff,#5b8cff);color:#fff;border-color:transparent}
   .hero{text-align:center}
-  .hero .t{font-size:26px;font-weight:800}
+  .hero .t{font-size:25px;font-weight:800}
   .hero .a{font-size:13px;color:var(--muted);margin-top:2px}
   .meta{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
   .meta span{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(124,108,255,.18);color:#c3bcff}
@@ -49,37 +52,20 @@
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 <div class="wrap">
-  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">📄 <b>SONG SHEET</b></div><span style="width:40px"></span></div>
+  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">📄 <b>SONG SHEETS</b></div><span style="width:40px"></span></div>
+  <div class="picker" id="picker"></div>
 
   <div class="hero">
-    <div class="t">Time After Time</div>
-    <div class="a">Cyndi Lauper · 1984</div>
-    <div class="meta"><span>Key of C</span><span>≈ 120 BPM</span><span>4 chords</span><span>Beginner</span></div>
+    <div class="t" id="title">—</div>
+    <div class="a" id="artist"></div>
+    <div class="meta" id="meta"></div>
   </div>
 
-  <div class="card">
-    <div class="lbl">Chords you need</div>
-    <div class="diagrams" id="diagrams"></div>
-  </div>
-
-  <div class="card">
-    <div class="lbl">The strum</div>
-    <div class="tip"><b>Easy version:</b> one down-strum on each beat (D D D D). <b>When ready:</b> the island strum below — down, down-up, up-down-up. Start slow; keeping time matters more than speed.</div>
-    <div class="pat" id="pat"></div>
-    <div class="count" id="count"></div>
-  </div>
-
-  <div class="card">
-    <div class="lbl">How it's built</div>
-    <div id="structure"></div>
-  </div>
-
-  <div class="card">
-    <div class="lbl">Tips</div>
-    <div class="tip">It's the same four chords all the way through — C, G, Am, F — looping. The trickiest change is <b>C → G</b> (three fingers move); drill that one in Smart Practice. Let chords ring; don't rush the changes. Once the loop feels easy, sing along.</div>
-  </div>
-
-  <a class="cta" href="song-mode.html?song=time%20after">▶ Play along in Song Mode</a>
+  <div class="card"><div class="lbl">Chords you need</div><div class="diagrams" id="diagrams"></div></div>
+  <div class="card"><div class="lbl">The strum</div><div class="tip" id="strumtip"></div><div class="pat" id="pat"></div><div class="count" id="count"></div></div>
+  <div class="card"><div class="lbl">How it's built</div><div id="structure"></div></div>
+  <div class="card"><div class="lbl">Tips</div><div class="tip" id="tips"></div></div>
+  <a class="cta" id="play" href="#">▶ Play along in Song Mode</a>
 </div>
 
 <script>
@@ -87,10 +73,28 @@ const CHORDS={
   'C' :{frets:[0,0,0,3],fingers:[0,0,0,3]},'G':{frets:[0,2,3,2],fingers:[0,1,3,2]},
   'Am':{frets:[2,0,0,0],fingers:[2,0,0,0]},'F':{frets:[2,0,1,0],fingers:[2,0,1,0]}
 };
+const PATTERNS={
+  island:{slots:['D','','D','U','','U','D','U'], count:['1','&','2','&','3','&','4','&']},
+  eighths:{slots:['D','U','D','U','D','U','D','U'], count:['1','&','2','&','3','&','4','&']}
+};
+const SONGS=[
+  {id:'time', title:'Time After Time', artist:'Cyndi Lauper · 1984', meta:['Key of C','≈120 BPM','4 chords','Beginner'],
+   chords:['C','G','Am','F'], pattern:'island',
+   strumtip:"<b>Easy:</b> one down-strum per beat (D D D D). <b>Nicer:</b> the island strum below — down, down-up, up-down-up. Start slow.",
+   sections:[['Intro','C|G|Am|F'],['Verse','C|G|Am|F|C|G|Am|F'],['Chorus','C|G|Am|F|C|G|Am|F'],['Outro','C|G|Am|F|…']],
+   tips:"Same four chords all the way through — C, G, Am, F — looping. The trickiest change is <b>C → G</b>; drill it in Smart Practice. Let chords ring and don't rush.",
+   play:'time%20after'},
+  {id:'wowy', title:'With or Without You', artist:'U2 · 1987', meta:['Key of C','≈110 BPM','4 chords','Beginner'],
+   chords:['C','G','Am','F'], pattern:'eighths',
+   strumtip:"Keep it gentle and even — steady down-up eighths (D U D U…). This song is all about the build, so start soft and let it grow.",
+   sections:[['Intro','C|G|Am|F'],['Verse','C|G|Am|F|C|G|Am|F'],['Chorus','C|G|Am|F|C|G|Am|F'],['Build','C|G|Am|F|C|G|Am|F'],['Outro','C|G|Am|F|…']],
+   tips:"It's literally the same C–G–Am–F loop for the entire song — so smooth, even strumming is everything. Start almost whisper-quiet and slowly get louder toward the end; that dynamic build IS the song.",
+   play:'without'}
+];
 const $=id=>document.getElementById(id);
 function diagram(ch){
-  const W=92,H=112,ml=14,mr=14,top=20,bot=10,st=4,nF=4;
-  const xs=(W-ml-mr)/(st-1),ys=(H-top-bot)/nF;let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  const W=92,H=112,ml=14,mr=14,top=20,bot=10,st=4,nF=4;const xs=(W-ml-mr)/(st-1),ys=(H-top-bot)/nF;
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
   s+=`<rect x="${ml}" y="${top-3}" width="${(st-1)*xs}" height="4" rx="2" fill="#cfd4ff"/>`;
   for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(st-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>`;}
   for(let i=0;i<st;i++){const x=ml+i*xs;s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-bot}" stroke="rgba(255,255,255,.28)" stroke-width="1.2"/>`;}
@@ -99,19 +103,24 @@ function diagram(ch){
     else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="8" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${fg}</text>`;}}
   return s+'</svg>';
 }
-['C','G','Am','F'].forEach(n=>{const d=document.createElement('div');d.className='dg';d.innerHTML='<div class="nm">'+n+'</div>'+diagram(CHORDS[n]);$('diagrams').appendChild(d);});
-
-// island strum visual: D · D U · U D U  over 8 eighth slots (1 & 2 & 3 & 4 &)
-const PAT=['D','','D','U','','U','D','U'], CNT=['1','&','2','&','3','&','4','&'];
-PAT.forEach(s=>{const e=document.createElement('div');e.className='s';e.style.color=s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)';e.textContent=s==='D'?'↓':s==='U'?'↑':'·';$('pat').appendChild(e);});
-CNT.forEach(c=>{const e=document.createElement('div');e.className='c';e.textContent=c;$('count').appendChild(e);});
-
-// structure
-const STRUCT=[['Intro','C  G  Am  F'],['Verse','C  G  Am  F   (×2)'],['Chorus','C  G  Am  F   (×2)'],['Outro','C  G  Am  F  …']];
-STRUCT.forEach(([h,bars])=>{const d=document.createElement('div');d.className='section';
-  d.innerHTML='<div class="h">'+h+'</div><div class="bars">'+bars.split(/\s{2,}/).map(b=>'<b>'+b.trim()+'</b>').join('')+'</div>';
-  $('structure').appendChild(d);});
-
+let cur=0;
+function render(){
+  const sg=SONGS[cur];
+  [...$('picker').children].forEach((b,i)=>b.classList.toggle('on',i===cur));
+  $('title').textContent=sg.title;$('artist').textContent=sg.artist;
+  $('meta').innerHTML=sg.meta.map(m=>'<span>'+m+'</span>').join('');
+  $('diagrams').innerHTML='';sg.chords.forEach(n=>{const d=document.createElement('div');d.className='dg';d.innerHTML='<div class="nm">'+n+'</div>'+diagram(CHORDS[n]);$('diagrams').appendChild(d);});
+  $('strumtip').innerHTML=sg.strumtip;
+  const P=PATTERNS[sg.pattern];
+  $('pat').innerHTML=P.slots.map(s=>'<div class="s" style="color:'+(s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)')+'">'+(s==='D'?'↓':s==='U'?'↑':'·')+'</div>').join('');
+  $('count').innerHTML=P.count.map(c=>'<div class="c">'+c+'</div>').join('');
+  $('structure').innerHTML=sg.sections.map(([h,bars])=>'<div class="section"><div class="h">'+h+'</div><div class="bars">'+bars.split('|').map(b=>'<b>'+b+'</b>').join('')+'</div></div>').join('');
+  $('tips').innerHTML=sg.tips;
+  $('play').href='song-mode.html?song='+sg.play;
+}
+SONGS.forEach((sg,i)=>{const b=document.createElement('button');b.textContent=sg.title;b.onclick=()=>{cur=i;render();};$('picker').appendChild(b);});
+const want=new URLSearchParams(location.search).get('s');if(want){const i=SONGS.findIndex(s=>s.id===want);if(i>=0)cur=i;}
+render();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 </script>
 </body>
