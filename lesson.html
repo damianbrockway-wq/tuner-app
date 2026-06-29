@@ -77,6 +77,7 @@
     <button class="primary" id="go">Begin</button>
     <button class="ghost" id="replay" style="display:none">♪ Beat</button>
     <button class="ghost" id="skip" style="display:none">Skip ⏭</button>
+    <button class="ghost" id="check" style="display:none">🔍 Check strings</button>
   </div>
 </div>
 
@@ -205,6 +206,7 @@ function pitchDetect(buf,rate){
   return (f>60&&f<1300)?f:null;}
 const STR_LBL=['g','C','E','A'], STR_BASE=[67,60,64,69];
 let pickPos=0,pickHold=0;
+let checking=false,checkStr=0,checkRang=[false,false,false,false],checkHold=0,checkChord='';
 const PAT={island:['D','','D','U','','U','D','U']};
 function patternHTML(name){const p=PAT[name];if(!p)return '';
   return '<div style="display:flex;gap:5px;justify-content:center;margin-top:6px">'+p.map(s=>'<div style="width:26px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+(s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)')+'">'+(s==='D'?'↓':s==='U'?'↑':'·')+'</div>').join('')+'</div>';}
@@ -235,7 +237,7 @@ function renderStep(){
   $('diagram').innerHTML=''; $('notes').innerHTML=''; $('chart').innerHTML='';
   $('name').style.display='none'; $('count').style.display='none';
   $('skip').style.display='none'; $('replay').style.display='none';
-  seqPos=0; strumCount=0; matchHold=0; pickPos=0; pickHold=0; celebrateUntil=0; stepStart=performance.now();
+  seqPos=0; strumCount=0; matchHold=0; pickPos=0; pickHold=0; celebrateUntil=0; stepStart=performance.now(); checking=false; $('check').style.display='none';
 
   if(step.type==='chord'){
     $('diagram').innerHTML=diagram(CHORDS[step.chord]);
@@ -280,7 +282,27 @@ function setSeqTarget(){
   $('diagram').innerHTML=diagram(CHORDS[sym]);
   $('notes').innerHTML='';CHORDS[sym].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CHORDS[sym].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
 }
-function maybeSkip(){ if(performance.now()-stepStart>9000) $('skip').style.display=''; }
+function startCheck(){const tgt=step.type==='chord'?step.chord:step.seq[seqPos];if(!tgt||!CHORDS[tgt])return;checking=true;checkChord=tgt;checkStr=0;checkRang=[false,false,false,false];checkHold=0;ensureMic();renderCheck();}
+function renderCheck(){const si=checkStr;$('diagram').innerHTML=diagram(CHORDS[checkChord],si);$('name').style.display='none';$('notes').innerHTML='';
+  $('chart').innerHTML='';for(let j=0;j<4;j++){const d=document.createElement('div');d.className='cell'+(j<checkStr?' done':'')+(j===checkStr?' cur':'');d.textContent=STR_LBL[j];$('chart').appendChild(d);}
+  $('title').textContent='Check '+checkChord+' · string by string';
+  $('body').textContent='Hold '+checkChord+' and pluck the '+STR_LBL[si]+' string on its own — we\'ll find any that aren\'t ringing.';
+  $('state').textContent='pluck the '+STR_LBL[si]+' string';
+  $('check').textContent="can't — skip";$('skip').style.display='none';$('replay').style.display='none';}
+function nextCheckStr(){checkStr++;if(checkStr>=4)finishCheck();else renderCheck();}
+function doCheck(dt){const si=checkStr;const expPc=((STR_BASE[si]+CHORDS[checkChord].frets[si])%12+12)%12;
+  const f=pitchDetect(timeBuf,audioCtx.sampleRate);
+  if(f){const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;if(pc===expPc)checkHold+=dt;else checkHold=Math.max(0,checkHold-dt);}
+  else checkHold=Math.max(0,checkHold-dt*0.5);
+  if(checkHold>0.18){checkHold=0;checkRang[si]=true;nextCheckStr();}}
+function finishCheck(){checkStr=4;$('diagram').innerHTML=diagram(CHORDS[checkChord]);$('name').style.display='none';
+  $('chart').innerHTML='';for(let j=0;j<4;j++){const d=document.createElement('div');d.className='cell '+(checkRang[j]?'done':'');d.textContent=STR_LBL[j]+(checkRang[j]?' ✓':' ✗');$('chart').appendChild(d);}
+  $('title').textContent=checkChord+' · result';
+  const dead=[];for(let j=0;j<4;j++)if(!checkRang[j])dead.push(j);
+  if(!dead.length)$('body').innerHTML='All four strings rang — your '+checkChord+' is clean! 🎉 Tap Back and play it.';
+  else $('body').innerHTML='Found it — '+dead.map(j=>{const fr=CHORDS[checkChord].frets[j];return fr>0?('the <b>'+STR_LBL[j]+'</b> string (fret '+fr+') isn\'t ringing: that finger is likely lying flat or touching it — use the very fingertip and arch the knuckle'):('the open <b>'+STR_LBL[j]+'</b> string isn\'t ringing: another finger is brushing it');}).join('; and ')+'.';
+  $('state').textContent='';$('check').textContent='↩ Back to the chord';}
+function maybeSkip(){ if(performance.now()-stepStart>9000){ $('skip').style.display=''; if(step&&(step.type==='chord'||step.type==='seq'))$('check').style.display=''; } }
 let stepStart=0;
 
 /* ---------- advance ---------- */
@@ -345,6 +367,7 @@ function loop(){
   if(!freqBuf||freqBuf.length!==bins)freqBuf=new Float32Array(bins);
   if(!timeBuf||timeBuf.length!==analyser.fftSize)timeBuf=new Float32Array(analyser.fftSize);
   analyser.getFloatFrequencyData(freqBuf);analyser.getFloatTimeDomainData(timeBuf);
+  if(checking){doCheck(dt);rafId=requestAnimationFrame(loop);return;}
   let rms=0;for(let i=0;i<timeBuf.length;i++)rms+=timeBuf[i]*timeBuf[i];rms=Math.sqrt(rms/timeBuf.length);
   const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);
   for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
@@ -404,6 +427,7 @@ $('go').addEventListener('click',()=>{
     stopMetro(); si++; renderStep();
   }
 });
+$('check').addEventListener('click',()=>{ if(!checking){startCheck();} else if(checkStr<4){nextCheckStr();} else {checking=false;renderStep();} });
 $('skip').addEventListener('click',()=>{ if(step&&step.type==='seq'&&seqPos<step.seq.length-1){[...$('chart').children][seqPos].classList.add('done');seqPos++;setSeqTarget();$('skip').style.display='none';stepStart=performance.now();} else {celebrateUntil=performance.now()+300;advanceStep();} });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
