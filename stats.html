@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pluck · Progress</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#08060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pluck">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{--bg:#08060f;--txt:#eef1ff;--muted:#9aa0c8;--accent:#7c6cff;--good:#27e0a0;--warn:#ffc23d;--bad:#ff5d73}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;min-height:100%;
+    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 18px);-webkit-user-select:none;user-select:none}
+  .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.4}
+  .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
+  .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}
+  .b2{width:45vmax;height:45vmax;background:#16d6a2;right:-10%;bottom:0}
+  .wrap{width:100%;max-width:460px;display:flex;flex-direction:column;gap:14px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
+  .brand{font-size:15px;font-weight:700}.brand b{color:#9d8bff}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px}
+  .lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .big{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+  .statrow{display:flex;gap:14px}
+  .statrow>div{flex:1}
+  .pbar{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}
+  .pbar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--good));transition:width .4s}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chips span{font-size:13px;font-weight:800;padding:5px 11px;border-radius:999px;border:1px solid transparent}
+  .chips .l3{background:rgba(39,224,160,.16);color:var(--good);border-color:rgba(39,224,160,.4)}
+  .chips .l2{background:rgba(255,194,61,.14);color:var(--warn);border-color:rgba(255,194,61,.35)}
+  .chips .l1{background:rgba(255,255,255,.06);color:var(--muted)}
+  .chips .none{background:rgba(255,255,255,.06);color:var(--muted)}
+  .chg{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .chg .pair{width:78px;font-weight:800;font-size:14px;flex:0 0 auto}
+  .chg .bar{flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
+  .chg .bar>i{display:block;height:100%;border-radius:5px}
+  .chg .v{width:34px;text-align:right;font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;flex:0 0 auto}
+  .chg .tag{font-size:10px;font-weight:800;flex:0 0 auto;width:74px;text-align:right}
+  .empty{color:var(--muted);font-size:13px;text-align:center;line-height:1.6;padding:8px}
+  a.cta{display:block;text-align:center;text-decoration:none;color:#fff;font-weight:800;padding:13px;border-radius:14px;background:linear-gradient(90deg,#7c6cff,#5b8cff)}
+</style>
+</head>
+<body>
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="wrap">
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">📊 <b>PROGRESS</b></div><span style="width:40px"></span></div>
+
+  <div class="card statrow">
+    <div><div class="lbl">Streak</div><div class="big" id="streak">—</div><div class="lbl" id="lastdate" style="letter-spacing:.3px;text-transform:none"></div></div>
+    <div><div class="lbl">Lessons</div><div class="big" id="lessons">0/10</div><div class="lbl" id="chordcount" style="letter-spacing:.3px;text-transform:none"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Course progress</div>
+    <div class="pbar"><i id="coursebar"></i></div>
+    <div class="lbl" style="margin-top:14px">Chords learned</div>
+    <div class="chips" id="chords"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Chord changes — your best in 60s</div>
+    <div id="changes"></div>
+  </div>
+
+  <a class="cta" href="practice.html">🎯 Practice your weakest →</a>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function load(){try{return JSON.parse(localStorage.getItem('pluckSkill')||'{}');}catch(e){return{};}}
+function getStreak(){try{return JSON.parse(localStorage.getItem('pluckStreak')||'{}');}catch(e){return{};}}
+const LMAP={1:['C','Am'],2:['F'],3:['G'],4:['Dm'],5:['D','A'],6:['C7','G7'],7:['Bb'],8:[],9:['Em'],10:['E']};
+const TOTAL_LESSONS=10;
+
+// streak
+const st=getStreak();const today=new Date().toDateString();
+if(st.last){$('streak').textContent='🔥 '+(st.count||1);$('lastdate').textContent=st.last===today?'practiced today':('last: '+st.last.replace(/^\w+ /,''));}
+else{$('streak').textContent='—';$('lastdate').textContent='no practice yet';}
+
+// lessons + chords learned
+let done=0, learned=[];
+for(let i=1;i<=TOTAL_LESSONS;i++){if(localStorage.getItem('pluckLesson'+i)==='done'){done++;learned=learned.concat(LMAP[i]||[]);}}
+learned=[...new Set(learned)];
+$('lessons').textContent=done+'/'+TOTAL_LESSONS;
+$('chordcount').textContent=learned.length+' chord'+(learned.length===1?'':'s');
+$('coursebar').style.width=Math.round(done/TOTAL_LESSONS*100)+'%';
+
+// chord chips, coloured by mastery (best CPM of any change involving the chord)
+const skill=load(); const changes=skill.changes||{};
+function bestInvolving(ch){let m=0;for(const k in changes){const [a,b]=k.split('>');if(a===ch||b===ch)m=Math.max(m,changes[k].bestCPM||0);}return m;}
+const cc=$('chords');
+if(learned.length){learned.forEach(ch=>{const m=bestInvolving(ch);const cls=m>=30?'l3':m>=15?'l2':'l1';const s=document.createElement('span');s.className=cls;s.textContent=ch;cc.appendChild(s);});}
+else{const s=document.createElement('span');s.className='none';s.textContent='Finish Lesson 1 to start';cc.appendChild(s);}
+
+// changes table, sorted by best CPM
+const rows=Object.keys(changes).map(k=>{const c=changes[k];const [a,b]=k.split('>');return {a,b,cpm:c.bestCPM||0,last:c.lastSeen||0};}).sort((x,y)=>y.cpm-x.cpm);
+const ch=$('changes');
+if(rows.length){
+  rows.forEach(r=>{
+    const col=r.cpm>=60?'var(--good)':r.cpm>=30?'#5fd39a':r.cpm>=15?'var(--warn)':'var(--bad)';
+    const tag=r.cpm>=60?'fluent':r.cpm>=30?'song-ready':r.cpm>=15?'building':'learning';
+    const due=(Date.now()-r.last)>3*86400000 ? ' · due' : '';
+    const d=document.createElement('div');d.className='chg';
+    d.innerHTML='<div class="pair">'+r.a+' ⇄ '+r.b+'</div>'+
+      '<div class="bar"><i style="width:'+Math.min(100,Math.round(r.cpm/60*100))+'%;background:'+col+'"></i></div>'+
+      '<div class="v">'+r.cpm+'</div>'+
+      '<div class="tag" style="color:'+col+'">'+tag+due+'</div>';
+    ch.appendChild(d);
+  });
+}else{
+  ch.innerHTML='<div class="empty">No chord changes practiced yet.<br>Do a lesson or open Smart Practice — your best changes-per-minute will show up here.</div>';
+}
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
+</script>
+</body>
+</html>

@@ -93,7 +93,8 @@ const CHORDS={
   'F' :{frets:[2,0,1,0],fingers:[2,0,1,0],pcs:[5,9,0]},'G':{frets:[0,2,3,2],fingers:[0,1,3,2],pcs:[7,11,2]},
   'Dm':{frets:[2,2,1,0],fingers:[2,3,1,0],pcs:[2,5,9]},'Em':{frets:[0,4,3,2],fingers:[0,3,2,1],pcs:[4,7,11]},
   'C7':{frets:[0,0,0,1],fingers:[0,0,0,1],pcs:[0,4,7,10]},'G7':{frets:[0,2,1,2],fingers:[0,2,1,3],pcs:[7,11,2,5]},
-  'D':{frets:[2,2,2,0],fingers:[1,2,3,0],pcs:[2,6,9]},'A':{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4]}
+  'D':{frets:[2,2,2,0],fingers:[1,2,3,0],pcs:[2,6,9]},'A':{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4]},
+  'Bb':{frets:[3,2,1,1],fingers:[3,2,1,1],pcs:[10,2,5]},'E':{frets:[1,4,0,2],fingers:[1,4,0,3],pcs:[4,8,11]}
 };
 const POOL=Object.keys(CHORDS);
 const $=id=>document.getElementById(id);
@@ -110,8 +111,8 @@ const Skill={
   recordChange(a,b,cpm){const m=this.load();m.changes=m.changes||{};const k=this.changeKey(a,b);const c=m.changes[k]||{bestCPM:0,attempts:0};c.attempts++;c.lastSeen=Date.now();if(cpm>(c.bestCPM||0))c.bestCPM=cpm;m.changes[k]=c;this.save(m);},
   lastSeen(a,b){const m=this.load();const c=(m.changes||{})[this.changeKey(a,b)];return c?(c.lastSeen||0):0;}
 };
-const LMAP={1:['C','Am'],2:['F'],3:['G'],4:['Dm']};
-function learnedChords(){let o=[];for(let i=1;i<=4;i++){if(localStorage.getItem('pluckLesson'+i)==='done')o=o.concat(LMAP[i]);}o=[...new Set(o)];return o.length>=2?o:['C','Am'];}
+const LMAP={1:['C','Am'],2:['F'],3:['G'],4:['Dm'],5:['D','A'],6:['C7','G7'],7:['Bb'],8:[],9:['Em'],10:['E']};
+function learnedChords(){let o=[];for(let i=1;i<=10;i++){if(localStorage.getItem('pluckLesson'+i)==='done'&&LMAP[i])o=o.concat(LMAP[i]);}o=[...new Set(o)];return o.length>=2?o:['C','Am'];}
 function allPairs(chords){const p=[];for(let i=0;i<chords.length;i++)for(let j=i+1;j<chords.length;j++)p.push([chords[i],chords[j]]);return p;}
 const DAY_MS=86400000;
 function pairPriority(a,b){

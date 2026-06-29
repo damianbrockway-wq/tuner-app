@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pluck · Song Sheet</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#08060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pluck">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{--bg:#08060f;--txt:#eef1ff;--muted:#9aa0c8;--accent:#7c6cff;--good:#27e0a0}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;min-height:100%;
+    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 18px);-webkit-user-select:none;user-select:none}
+  .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.4}
+  .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
+  .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}
+  .b2{width:45vmax;height:45vmax;background:#16d6a2;right:-10%;bottom:0}
+  .wrap{width:100%;max-width:460px;display:flex;flex-direction:column;gap:14px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
+  .brand{font-size:15px;font-weight:700}.brand b{color:#9d8bff}
+  .hero{text-align:center}
+  .hero .t{font-size:26px;font-weight:800}
+  .hero .a{font-size:13px;color:var(--muted);margin-top:2px}
+  .meta{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .meta span{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(124,108,255,.18);color:#c3bcff}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px}
+  .lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .diagrams{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+  .dg{text-align:center}.dg .nm{font-size:16px;font-weight:800;margin-bottom:2px}
+  .pat{display:flex;gap:5px;justify-content:center;margin-top:10px}
+  .pat .s{width:30px;height:38px;border-radius:8px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800}
+  .count{display:flex;gap:5px;justify-content:center;margin-top:3px}
+  .count .c{width:30px;text-align:center;font-size:10px;color:var(--muted)}
+  .section{margin-top:12px}
+  .section .h{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+  .bars{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .bars b{font-weight:800;font-size:15px;min-width:42px;text-align:center;padding:7px 6px;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+  .tip{font-size:13px;color:var(--muted);line-height:1.6;margin-top:6px}
+  a.cta{display:block;text-align:center;text-decoration:none;color:#fff;font-weight:800;padding:14px;border-radius:15px;background:linear-gradient(90deg,#7c6cff,#5b8cff);box-shadow:0 10px 26px rgba(124,108,255,.45)}
+</style>
+</head>
+<body>
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="wrap">
+  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">📄 <b>SONG SHEET</b></div><span style="width:40px"></span></div>
+
+  <div class="hero">
+    <div class="t">Time After Time</div>
+    <div class="a">Cyndi Lauper · 1984</div>
+    <div class="meta"><span>Key of C</span><span>≈ 120 BPM</span><span>4 chords</span><span>Beginner</span></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Chords you need</div>
+    <div class="diagrams" id="diagrams"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">The strum</div>
+    <div class="tip"><b>Easy version:</b> one down-strum on each beat (D D D D). <b>When ready:</b> the island strum below — down, down-up, up-down-up. Start slow; keeping time matters more than speed.</div>
+    <div class="pat" id="pat"></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">How it's built</div>
+    <div id="structure"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Tips</div>
+    <div class="tip">It's the same four chords all the way through — C, G, Am, F — looping. The trickiest change is <b>C → G</b> (three fingers move); drill that one in Smart Practice. Let chords ring; don't rush the changes. Once the loop feels easy, sing along.</div>
+  </div>
+
+  <a class="cta" href="song-mode.html?song=time%20after">▶ Play along in Song Mode</a>
+</div>
+
+<script>
+const CHORDS={
+  'C' :{frets:[0,0,0,3],fingers:[0,0,0,3]},'G':{frets:[0,2,3,2],fingers:[0,1,3,2]},
+  'Am':{frets:[2,0,0,0],fingers:[2,0,0,0]},'F':{frets:[2,0,1,0],fingers:[2,0,1,0]}
+};
+const $=id=>document.getElementById(id);
+function diagram(ch){
+  const W=92,H=112,ml=14,mr=14,top=20,bot=10,st=4,nF=4;
+  const xs=(W-ml-mr)/(st-1),ys=(H-top-bot)/nF;let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  s+=`<rect x="${ml}" y="${top-3}" width="${(st-1)*xs}" height="4" rx="2" fill="#cfd4ff"/>`;
+  for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(st-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>`;}
+  for(let i=0;i<st;i++){const x=ml+i*xs;s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-bot}" stroke="rgba(255,255,255,.28)" stroke-width="1.2"/>`;}
+  for(let i=0;i<st;i++){const x=ml+i*xs,fr=ch.frets[i],fg=ch.fingers[i];
+    if(fr===0){s+=`<circle cx="${x}" cy="${top-10}" r="4" fill="none" stroke="#9aa0c8" stroke-width="1.4"/>`;}
+    else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="8" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${fg}</text>`;}}
+  return s+'</svg>';
+}
+['C','G','Am','F'].forEach(n=>{const d=document.createElement('div');d.className='dg';d.innerHTML='<div class="nm">'+n+'</div>'+diagram(CHORDS[n]);$('diagrams').appendChild(d);});
+
+// island strum visual: D · D U · U D U  over 8 eighth slots (1 & 2 & 3 & 4 &)
+const PAT=['D','','D','U','','U','D','U'], CNT=['1','&','2','&','3','&','4','&'];
+PAT.forEach(s=>{const e=document.createElement('div');e.className='s';e.style.color=s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)';e.textContent=s==='D'?'↓':s==='U'?'↑':'·';$('pat').appendChild(e);});
+CNT.forEach(c=>{const e=document.createElement('div');e.className='c';e.textContent=c;$('count').appendChild(e);});
+
+// structure
+const STRUCT=[['Intro','C  G  Am  F'],['Verse','C  G  Am  F   (×2)'],['Chorus','C  G  Am  F   (×2)'],['Outro','C  G  Am  F  …']];
+STRUCT.forEach(([h,bars])=>{const d=document.createElement('div');d.className='section';
+  d.innerHTML='<div class="h">'+h+'</div><div class="bars">'+bars.split(/\s{2,}/).map(b=>'<b>'+b.trim()+'</b>').join('')+'</div>';
+  $('structure').appendChild(d);});
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
+</script>
+</body>
+</html>

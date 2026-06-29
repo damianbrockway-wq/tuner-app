@@ -455,6 +455,7 @@ function songComplete(){
 
 /* ---------- wiring ---------- */
 buildList();
+(()=>{try{const sp=new URLSearchParams(location.search).get('song');if(sp){const i=SONGS.findIndex(x=>x.title.toLowerCase().includes(sp.toLowerCase()));if(i>=0)loadSong(i);}}catch(e){}})();
 $('startBtn').addEventListener('click',toggleMic);
 $('toList').addEventListener('click',showList);
 $('skipBtn').addEventListener('click',()=>{matchHold=0;if(idx+1<TL.length){setCell(idx+1);refreshTarget();}else songComplete();});
