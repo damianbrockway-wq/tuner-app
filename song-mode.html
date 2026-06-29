@@ -120,7 +120,7 @@
     <div id="timing" style="font-size:12px;font-weight:700;color:var(--muted);height:15px"></div>
     <div class="bar"><i id="conf"></i></div>
     <div class="chart" id="chart"></div>
-    <div class="tempobar" id="tempobar" style="display:none;flex-wrap:wrap;justify-content:center"><span>Tempo</span><input type="range" id="bpm" min="60" max="160" value="90"><span class="bpm" id="bpmlbl">90 BPM</span><label class="cin"><input type="checkbox" id="cin" checked>count-in</label><label class="cin"><input type="checkbox" id="autotempo">Auto</label><button class="ghost" id="calBtn" style="padding:6px 12px;font-size:11px">Calibrate</button><span class="bpm" id="latlbl" style="min-width:56px">lat 0ms</span></div>
+    <div class="tempobar" id="tempobar" style="display:none;flex-wrap:wrap;justify-content:center"><span>Tempo</span><input type="range" id="bpm" min="60" max="160" value="90"><span class="bpm" id="bpmlbl">90 BPM</span><label class="cin"><input type="checkbox" id="cin" checked>count-in</label><label class="cin"><input type="checkbox" id="autotempo">Auto</label><span>🔊</span><input type="range" id="metvol" min="0" max="100" value="70" style="width:64px"><button class="ghost" id="calBtn" style="padding:6px 12px;font-size:11px">Calibrate</button><span class="bpm" id="latlbl" style="min-width:56px">lat 0ms</span></div>
     <div class="row">
       <button class="primary" id="startBtn">Start</button>
       <button class="ghost" id="skipBtn">Skip ⏭</button>
@@ -305,7 +305,7 @@ function startClock(){
     const t=clockT0+i*secPerBeat, accent=(((i-cb)%beatsPerBar)+beatsPerBar)%beatsPerBar===0;
     const o=audioCtx.createOscillator(),g=audioCtx.createGain();
     o.type='square';o.frequency.value=accent?1600:1050;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.34:0.22,t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime((accent?0.5:0.32)*CFG('pluckMetVol',0.7),t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
     o.connect(g).connect(metGain);o.start(t);o.stop(t+0.09);metOscs.push(o);
   }
 }
@@ -462,6 +462,8 @@ $('skipBtn').addEventListener('click',()=>{matchHold=0;if(idx+1<TL.length){setCe
 $('restartBtn').addEventListener('click',()=>{$('pop').textContent='✅';[...$('chart').children].forEach(c=>c.classList.remove('done'));setCell(0);refreshTarget();if(mode==='tempo'&&running){stopClock();startClock();$('state').textContent='count in…';}else $('state').textContent=running?'play the chord':'tap Start';});
 $('modeseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(running)stopMic();mode=b.dataset.mode;[...$('modeseg').children].forEach(c=>c.classList.toggle('on',c===b));$('tempobar').style.display=mode==='tempo'?'flex':'none';$('skipBtn').style.display=mode==='tempo'?'none':'';$('startBtn').textContent=mode==='tempo'?'Play':'Start';setCell(0);refreshTarget();});
 $('bpm').addEventListener('input',()=>{$('bpmlbl').textContent=$('bpm').value+' BPM';saveBpm(+$('bpm').value);});
+(()=>{const mv=localStorage.getItem('pluckMetVol');if(mv!==null)$('metvol').value=Math.round(parseFloat(mv)*100);})();
+$('metvol').addEventListener('input',()=>{try{localStorage.setItem('pluckMetVol',String(+$('metvol').value/100));}catch(e){}});
 try{const sb=parseInt(localStorage.getItem('pluckBpm'),10);if(!isNaN(sb)&&sb>=60&&sb<=160){$('bpm').value=sb;$('bpmlbl').textContent=sb+' BPM';}}catch(e){}
 try{const v=parseFloat(localStorage.getItem('pluckLat'));if(!isNaN(v))latencyOffset=v;}catch(e){}
 $('latlbl').textContent='lat '+Math.round(latencyOffset*1000)+'ms';

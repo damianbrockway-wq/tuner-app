@@ -73,7 +73,8 @@ const CHORDS={
   'C' :{frets:[0,0,0,3],fingers:[0,0,0,3]},'G':{frets:[0,2,3,2],fingers:[0,1,3,2]},
   'Am':{frets:[2,0,0,0],fingers:[2,0,0,0]},'F':{frets:[2,0,1,0],fingers:[2,0,1,0]},
   'D':{frets:[2,2,2,0],fingers:[1,2,3,0]},'A':{frets:[2,1,0,0],fingers:[2,1,0,0]},
-  'E':{frets:[1,4,0,2],fingers:[1,4,0,3]},'Em':{frets:[0,4,3,2],fingers:[0,3,2,1]}
+  'E':{frets:[1,4,0,2],fingers:[1,4,0,3]},'Em':{frets:[0,4,3,2],fingers:[0,3,2,1]},
+  'F#m':{frets:[2,1,2,0],fingers:[3,1,2,0]}
 };
 const PATTERNS={
   island:{slots:['D','','D','U','','U','D','U'], count:['1','&','2','&','3','&','4','&']},
@@ -135,7 +136,19 @@ const SONGS=[
  strumtip:"Big, confident down-strums with room to breathe between them, building like a stadium chant rising up.",
  sections:[['Intro','Em|C|D|G'],['Verse','Em|C|D|G|Em|C|D|G'],['Chorus','Em|C|D|G|Em|C|D|G']],
  tips:"The C-to-D change is the sneaky one, so move your whole hand together rather than one finger at a time. Start restrained and let it swell into the chorus, then send the C-to-D change through Smart Practice.",
- play:'prayer'}
+ play:'prayer'},
+  {id:'takeon', title:'Take On Me', artist:'a-ha · 1985', meta:['Key of A','≈170 BPM','4 chords','Medium'],
+   chords:['A','E','F#m','D'], pattern:'eighths',
+   strumtip:"Fast, even eighth-note down-ups, bright and bouncy — keep your wrist loose so it stays light and quick.",
+   sections:[['Intro','A|E'],['Verse','A|E|F#m|D|A|E|F#m|D'],['Chorus','A|E|F#m|D|A|E|F#m|D']],
+   tips:"F#m is the new shape — keep your fingers arched so moving in and out of it stays clean. Drill the E to F#m change in Smart Practice.",
+   play:'take on'},
+  {id:'everybreath', title:'Every Breath You Take', artist:'The Police · 1983', meta:['Key of A','≈115 BPM','4 chords','Medium'],
+   chords:['A','F#m','D','E'], pattern:'folk',
+   strumtip:"Gentle and even, letting each chord ring — soft and hypnotic, never busy.",
+   sections:[['Intro','A|F#m'],['Verse','A|F#m|D|E|A|F#m|D|E'],['Chorus','A|F#m|D|E|A|F#m|D|E']],
+   tips:"The A to F#m change repeats nonstop, so make it smooth and automatic. Keep it quiet and steady, and run A to F#m through Smart Practice.",
+   play:'every breath'}
 ];
 const $=id=>document.getElementById(id);
 function diagram(ch){

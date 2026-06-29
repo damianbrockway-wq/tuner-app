@@ -317,7 +317,7 @@ function startMetro(s){
   metGain=ctx.createGain();metGain.connect(ctx.destination);metOscs=[];
   for(let i=0;i<ci+s.beats;i++){const t=t0+i*spb, accent=(((i-ci)%4)+4)%4===0;
     const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=accent?1600:1050;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(accent?0.34:0.22,t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime((accent?0.5:0.32)*CFG('pluckMetVol',0.7),t+0.004);g.gain.exponentialRampToValueAtTime(0.0006,t+0.06);
     o.connect(g).connect(metGain);o.start(t);o.stop(t+0.09);metOscs.push(o);}
 }
 function stopMetro(){metOscs.forEach(o=>{try{o.stop()}catch(e){}});metOscs=[];if(metGain){try{metGain.disconnect()}catch(e){}metGain=null;}}
