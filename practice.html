@@ -54,7 +54,7 @@
 
   <!-- setup -->
   <div id="setup" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
-    <div class="row"><button class="primary" id="todayBtn">🎯 Today's Practice</button></div>
+    <div class="row"><button class="primary" id="todayBtn">🎯 Daily Practice</button></div>
     <div class="best" id="streak"></div>
     <div class="lbl" style="margin-top:6px;opacity:.7">— or drill one pair —</div>
     <div class="lbl">One-minute changes</div>
@@ -68,6 +68,7 @@
 
   <!-- drill -->
   <div id="drill" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
+    <div class="lbl" id="phase" style="color:var(--accent);min-height:14px"></div>
     <div class="timer" id="timer">0:60</div>
     <div class="pair" id="drillPair"></div>
     <div class="lbl">Changes</div>
@@ -172,9 +173,9 @@ function showSetup(){
 
 /* ---------- the drill ---------- */
 let running=false,count=0,target='',lastConfirmed=null,matchHold=0,tEnd=0,lastT=performance.now();
-let inSession=false,sessionQueue=[],sessionResults=[],drillSecs=60;
+let inSession=false,sessionQueue=[],sessionResults=[],drillSecs=60,sessionPhase='',sessionLen=0;
 function startDrill(){
-  $('setup').style.display='none';$('result').style.display='none';$('drill').style.display='flex';
+  $('setup').style.display='none';$('result').style.display='none';$('drill').style.display='flex';$('phase').textContent=inSession?sessionPhase:'';
   count=0;lastConfirmed=null;matchHold=0;target=A;
   $('count').textContent='0';pairHTML(A,B,target,$('drillPair'));$('state').textContent='play '+target;
   tEnd=performance.now()+drillSecs*1000;
@@ -199,7 +200,7 @@ function confirmChord(name){
 function finishDrill(){
   running=false;stopMic();
   Skill.recordChange(A,B,count);
-  if(inSession){ sessionResults.push({A,B,count}); if(sessionQueue.length){nextSessionDrill();return;} showSessionSummary(); return; }
+  if(inSession){ sessionResults.push({phase:(sessionPhase.split(' · ')[0]),A,B,count}); if(sessionQueue.length){nextSessionDrill();return;} showSessionSummary(); return; }
   $('drill').style.display='none';$('result').style.display='flex';
   $('rsub').textContent='changes per minute';
   $('rcount').textContent=count;
@@ -218,14 +219,29 @@ function weakestPairs(k){const pairs=allPairs(learnedChords());pairs.sort((x,y)=
 function getStreak(){try{return JSON.parse(localStorage.getItem('pluckStreak')||'{}');}catch(e){return{};}}
 function streakText(){const s=getStreak();if(!s.last)return 'Practice daily to build a streak 🔥';const t=new Date().toDateString();if(s.last===t)return '🔥 '+s.count+'-day streak — done today';return '🔥 '+s.count+'-day streak — practice today to keep it';}
 function bumpStreak(){const s=getStreak(),t=new Date().toDateString();if(s.last===t)return s.count;const y=new Date(Date.now()-86400000).toDateString();const count=(s.last===y)?(s.count||0)+1:1;localStorage.setItem('pluckStreak',JSON.stringify({last:t,count}));return count;}
-function startSession(){const pairs=weakestPairs(2);if(!pairs.length){startDrill();return;}sessionQueue=pairs.slice();sessionResults=[];inSession=true;drillSecs=40;nextSessionDrill();}
-function nextSessionDrill(){if(!sessionQueue.length){showSessionSummary();return;}[A,B]=sessionQueue.shift();startDrill();}
+function pkey(p){return Skill.changeKey(p[0],p[1]);}
+function buildSession(){
+  const pairs=allPairs(learnedChords());if(!pairs.length)return [];
+  const byPri=[...pairs].sort((x,y)=>pairPriority(...y)-pairPriority(...x));
+  const byStrong=[...pairs].sort((x,y)=>Skill.best(...y)-Skill.best(...x));
+  const focus=byPri[0], strong=byStrong[0];
+  const review=byPri.find(p=>pkey(p)!==pkey(focus))||focus;
+  const finish=byStrong.find(p=>pkey(p)!==pkey(focus)&&pkey(p)!==pkey(review))||strong;
+  const plan=[{label:'Warm-up',pair:strong,secs:25}];
+  if(pkey(review)!==pkey(strong))plan.push({label:'Review',pair:review,secs:35});
+  plan.push({label:'Focus',pair:focus,secs:45});
+  if(pkey(finish)!==pkey(focus)&&pkey(finish)!==pkey(review)&&pkey(finish)!==pkey(strong))plan.push({label:'Finish strong',pair:finish,secs:25});
+  return plan;
+}
+function startSession(){const plan=buildSession();if(!plan.length){inSession=false;drillSecs=60;startDrill();return;}sessionQueue=plan.slice();sessionLen=plan.length;sessionResults=[];inSession=true;nextSessionDrill();}
+function nextSessionDrill(){if(!sessionQueue.length){showSessionSummary();return;}const item=sessionQueue.shift();[A,B]=item.pair;drillSecs=item.secs;sessionPhase=item.label+' · '+(sessionLen-sessionQueue.length)+' of '+sessionLen;startDrill();}
 function showSessionSummary(){
   inSession=false;const total=sessionResults.reduce((s,r)=>s+r.count,0);bumpStreak();
   $('drill').style.display='none';$('result').style.display='flex';
-  $('rcount').textContent=total;$('rsub').textContent='changes across '+sessionResults.length+' drills';
+  $('rcount').textContent=total;$('rsub').textContent='changes in your session';
   $('rbest').textContent=streakText();
-  $('rmsg').innerHTML='Session done! '+sessionResults.map(r=>r.A+'⇄'+r.B+': '+r.count).join(' · ')+'<br>Come back tomorrow to keep the streak.';
+  $('rmsg').innerHTML='Daily Practice done! '+sessionResults.map(r=>(r.phase||'')+' '+r.A+'⇄'+r.B+': '+r.count).join(' · ')+'<br>Come back tomorrow to keep the streak.';
+  sessionPhase='';
 }
 
 /* ---------- audio (chord detection, auto-resume) ---------- */

@@ -95,6 +95,8 @@ const CHORDS={
   'A' :{frets:[2,1,0,0],fingers:[2,1,0,0],pcs:[9,1,4],   notes:['A','C♯','E']},
   'Bb':{frets:[3,2,1,1],fingers:[3,2,1,1],pcs:[10,2,5],  notes:['B♭','D','F']},
   'E' :{frets:[1,4,0,2],fingers:[1,4,0,3],pcs:[4,8,11],   notes:['E','G♯','B']},
+  'F#m':{frets:[2,1,2,0],fingers:[3,1,2,0],pcs:[1,6,9],  notes:['F♯','A','C♯']},
+  'Bm':{frets:[4,2,2,2],fingers:[3,1,1,1],pcs:[11,2,6],  notes:['B','D','F♯']},
 };
 const POOL=Object.keys(CHORDS);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
@@ -187,8 +189,32 @@ const LESSONS={
   {type:'seq', seq:['A','D','E','A'], step:'Song: key of A', title:'A song in the key of A', body:"Time for the payoff. A, D and E are the three main chords in the key of A, the classic I, IV, V progression behind countless songs. Strum each chord a few times, take your time on the changes, and listen to how they pull back home to A. This is a real progression you'll recognize once you hear it."},
   {type:'done', step:'Done', title:'🎉 Lesson 10 complete!', body:"That's it, you now know the full set of common open chords. E is genuinely tricky, so be proud of sticking with it. With C, Am, F, G, Em, Dm, D, A and E in your hands, you can play an enormous number of songs. Keep practicing those A to E changes and they'll smooth out before you know it."}
  ]
+ ,11:[
+  {type:'info', step:'Lesson 11', title:'Two new minor chords', body:"Today you learn F#m and Bm. They sound great together and they unlock a whole pile of songs that were off-limits before. One of them is U2's 'With or Without You', which was originally written in this exact key. Take your time with these two and the rest of the lesson is just playing."},
+  {type:'chord', chord:'F#m', step:'F#m', title:'F#m, the 2,1,2,0 shape', body:"Index finger on the C string at the 1st fret, middle finger on the g string at the 2nd fret, ring finger on the E string at the 2nd fret, and let the A string ring open. That's it. It looks busy but it's friendlier than a full barre, since each finger gets its own string. Strum slowly and check that all four strings sound clean."},
+  {type:'chord', chord:'Bm', step:'Bm', title:'Bm, your first real barre', body:"This one is genuinely hard, so don't be discouraged. Lay your index finger flat across the C, E and A strings at the 2nd fret, then put your ring finger on the g string at the 4th fret. The tip: press the index firmly and roll it slightly onto its side, toward the bony edge of the finger. That bit of roll is usually the difference between a buzzy mess and a clear chord. It will feel awkward at first for everyone. Keep at it."},
+  {type:'seq', seq:['A','F#m','A','F#m'], step:'A to F#m', title:'Change drill', body:"Now switch between A and F#m and back again. Go slow and aim for smooth changes over fast ones. Notice that a couple of fingers barely have to move between these two shapes, so look for what stays put and let that guide you."},
+  {type:'seq', seq:['D','A','Bm','G'], step:'A real song', title:'With or Without You', body:"D, A, Bm, G. This is the original key of 'With or Without You', and once it's looping you'll hear the whole song in it. Don't rush the change into Bm, give yourself an extra beat if you need one. Round and round it goes."},
+  {type:'done', step:'Done', title:'🎉 Lesson 11 complete!', body:"That was a big one. Bm is a milestone, your first proper barre-style chord besides Bb, and getting it to ring at all is a real step up. F#m will become one of your most-used chords from here. Well done, and go play that song a few more times for fun."}
+ ]
+ ,12:[
+  {type:'info', step:'Lesson 12', title:'Strumming patterns II', body:"You already know a handful of chords, but here's the thing: the same four chords can sound like a campfire singalong or a beach party, depending on how you strum them. The strum is the rhythm and the feel. Today we'll play one chord and just change the strum, so you can hear how much it matters before we put it all together."},
+  {type:'metro', chord:'C', bpm:90, beats:8, pattern:'downup', step:'Down-up eighths', title:'Steady down-up', body:"Hold a C and let the metronome count you in. The arrows will show down, up, down, up, straight through. Your hand keeps moving like a pendulum the whole time: it brushes down across the strings, then catches them on the way back up. The trick is to never stop the motion, even on the ups where you barely touch the strings. Keep it loose and even."},
+  {type:'metro', chord:'C', bpm:85, beats:8, pattern:'folk', step:'Folk pattern', title:'A folk feel', body:"Same C chord, new groove. The arrows go down, then down-up-down-up-down-up. So you start each measure with one firm down strum, then fall into a run of quick down-ups. Let that first down land heavy, almost like a step, and let the rest bounce along behind it. This is the pattern behind a lot of country and folk tunes, and you'll feel why the moment you hear it."},
+  {type:'metro', chord:'C', bpm:80, beats:8, pattern:'island', step:'Island review', title:'The island strum', body:"Back to our keystone. The arrows show down, then down-up, then up-down-up, with a little gap where you skip a beat. That skipped beat is the whole secret of the island strum: your hand keeps swinging, but it misses the strings on purpose, and that missing strum is what makes it feel relaxed and swaying. We've slowed it down so you can sit in the groove. Don't rush the gaps."},
+  {type:'seq', seq:['C','G','Am','F','C','G','Am','F'], step:'Put it together', title:'Try it on a song', body:"Now the fun part. Play this progression, C to G to Am to F, twice through, and pick whichever pattern from today felt best in your hands. The app advances each time you land a clean chord, so take your time on the changes. Once you're comfortable, try the same progression with a different strum and notice how the whole thing changes character."},
+  {type:'done', step:'Done', title:'🎉 Lesson 12 complete!', body:"Nicely done. You just heard the same chords turn into three different moods without changing a single note, only the strum. That's a big deal: picking the right strum is honestly half of making a song sound right. Keep these patterns in your pocket and reach for them when you learn a new tune."}
+ ]
+ ,13:[
+  {type:'info', step:'Lesson 13', title:'Fingerpicking patterns', body:"Strumming gives you rhythm. Fingerpicking gives you movement. Instead of brushing all the strings at once, you pluck them one at a time, and that little bit of separation makes a chord sound like it's unfolding rather than just landing. Today you'll learn two new patterns to go with the up-roll you already know. Take them slowly. The whole point is that each string gets its own moment."},
+  {type:'pick', chord:'C', seq:['g','C','E','A'], step:'Pattern 1', title:"Quick review: the up-roll", body:"Let's warm up with the one you know. Hold a C and pluck low to high: g, then C, then E, then A. Thumb on the low g string, then your fingers walk up the rest. Keep it even and unhurried. This rolling-up sound is your home base, and the next two patterns are just different routes through the same four strings."},
+  {type:'pick', chord:'Am', seq:['g','E','C','E'], step:'Pattern 2', title:"An inside pattern", body:"Now an 'inside' pattern on Am. Pluck g, then E, then C, then E again. Notice it doesn't just climb in a line. Your thumb sounds the low g, then your hand bounces between the two middle strings: E, C, E. Let your index finger handle the C string and your middle finger handle the E string, so you're rocking gently between them. It feels a bit like a little see-saw. Slow is fine, it'll smooth out."},
+  {type:'pick', chord:'F', seq:['A','E','C','g'], step:'Pattern 3', title:"The down-roll", body:"This one's the up-roll in reverse, a 'down-roll', on F. Start high and fall: A, then E, then C, then g. Your fingers pluck the top three strings on the way down, and your thumb catches the low g at the bottom. Where the up-roll feels like it's rising, the down-roll feels like it's settling. Same four strings, opposite direction."},
+  {type:'seq', seq:['C','Am','F','G'], step:'Put it together', title:"A gentle progression", body:"Time to use it. Play through C, Am, F, then G. If you're feeling steady, fingerpick each chord with one of today's patterns, maybe up-roll the C, inside-pattern the Am, down-roll the F. If that's too much to juggle, just strum each one cleanly. Either way, listen to how the chords lean into each other. Switching while picking is hard at first, so don't rush it."},
+  {type:'done', step:'Done', title:'🎉 Lesson 13 complete!', body:"Nicely done. Fingerpicking takes patience, your fingers need time to learn which string is which without you looking, but it's worth it. Few things on the ukulele sound as pretty as a chord picked out one note at a time. Keep these patterns in your back pocket and they'll start showing up in your playing on their own."}
+ ]
 };
-const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=10)?n:1;})();
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=13)?n:1;})();
 const STEPS=LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;
@@ -207,7 +233,7 @@ function pitchDetect(buf,rate){
 const STR_LBL=['g','C','E','A'], STR_BASE=[67,60,64,69];
 let pickPos=0,pickHold=0;
 let checking=false,checkStr=0,checkRang=[false,false,false,false],checkHold=0,checkChord='';
-const PAT={island:['D','','D','U','','U','D','U']};
+const PAT={island:['D','','D','U','','U','D','U'],downs:['D','','D','','D','','D',''],downup:['D','U','D','U','D','U','D','U'],folk:['D','','D','U','D','U','D','U']};
 function patternHTML(name){const p=PAT[name];if(!p)return '';
   return '<div style="display:flex;gap:5px;justify-content:center;margin-top:6px">'+p.map(s=>'<div style="width:26px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+(s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)')+'">'+(s==='D'?'↓':s==='U'?'↑':'·')+'</div>').join('')+'</div>';}
 function diagram(ch,hi){
