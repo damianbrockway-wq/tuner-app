@@ -462,6 +462,7 @@ function advance(){
   setTimeout(()=>{setCell(idx+1);refreshTarget();},800);
 }
 function songComplete(){
+  try{const sd=JSON.parse(localStorage.getItem('pluckSongsDone')||'{}');sd[SONG.title]=true;localStorage.setItem('pluckSongsDone',JSON.stringify(sd));}catch(e){}
   $('state').textContent='🎉 you played it!';$('pop').textContent='🎉';
   $('name').textContent='✓';$('name').style.color='var(--good)';
   running=false;cancelAnimationFrame(rafId);if(watchTimer){clearInterval(watchTimer);watchTimer=null;}stopClock();releaseWake();

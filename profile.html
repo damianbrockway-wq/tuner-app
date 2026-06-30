@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pluck · Profile</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#08060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pluck">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{--bg:#08060f;--txt:#eef1ff;--muted:#9aa0c8;--accent:#7c6cff;--good:#27e0a0;--warn:#ffc23d}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;min-height:100%;
+    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 18px);-webkit-user-select:none;user-select:none}
+  .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.45}
+  .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
+  .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}.b2{width:45vmax;height:45vmax;background:#16d6a2;right:-10%;bottom:0}
+  .wrap{width:100%;max-width:460px;display:flex;flex-direction:column;gap:14px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
+  .brand{font-size:15px;font-weight:700}.brand b{color:#9d8bff}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px}
+  .hero{display:flex;align-items:center;gap:14px}
+  .avatar{width:64px;height:64px;border-radius:18px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:34px;background:linear-gradient(180deg,#7c6cff,#5b8cff)}
+  .hname{font-size:20px;font-weight:800}
+  .htitle{font-size:13px;color:var(--accent);font-weight:800;margin-top:1px}
+  .edit{font-size:11px;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .pbar{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:12px}
+  .pbar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--good));transition:width .5s}
+  .lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;text-align:center}
+  .stat .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stat .k{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .ach{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .badge{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px}
+  .badge.locked{opacity:.4;filter:grayscale(1)}
+  .badge .ic{font-size:26px;flex:0 0 auto}
+  .badge .bn{font-size:13px;font-weight:800;line-height:1.1}
+  .badge .bd{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.2}
+</style>
+</head>
+<body>
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="wrap">
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">🏆 <b>PROFILE</b></div><span style="width:40px"></span></div>
+
+  <div class="card">
+    <div class="hero">
+      <div class="avatar" id="avatar">🎸</div>
+      <div style="flex:1;min-width:0">
+        <div class="hname" id="hname">Player</div>
+        <div class="htitle" id="htitle">Newcomer</div>
+        <div class="edit" id="editName">edit name</div>
+      </div>
+    </div>
+    <div class="lbl" style="margin-top:14px" id="achcount">0 of 13 badges</div>
+    <div class="pbar"><i id="achbar"></i></div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="card">
+    <div class="lbl">Achievements</div>
+    <div class="ach" id="ach"></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const done=k=>localStorage.getItem(k)==='done';
+const LMAP={1:['C','Am'],2:['F'],3:['G'],4:['Dm'],5:['D','A'],6:['C7','G7'],7:['Bb'],8:[],9:['Em'],10:['E'],11:['F#m','Bm'],12:[],13:[]};
+function J(k){try{return JSON.parse(localStorage.getItem(k)||'{}');}catch(e){return{};}}
+
+function stats(){
+  let lessons=0,chords=[];for(let i=1;i<=13;i++)if(done('pluckLesson'+i)){lessons++;chords=chords.concat(LMAP[i]||[]);}
+  chords=[...new Set(chords)];
+  const changes=(J('pluckSkill').changes)||{};let bestcpm=0;for(const k in changes)bestcpm=Math.max(bestcpm,changes[k].bestCPM||0);
+  const streak=(J('pluckStreak').count)||0;
+  const stime=J('pluckSongTime');let bestTime=0;for(const k in stime)bestTime=Math.max(bestTime,stime[k]);
+  const songs=Math.max(Object.keys(stime).length,Object.keys(J('pluckSongsDone')).length);
+  const picked=done('pluckLesson4')||done('pluckLesson13');
+  const ear=parseInt(localStorage.getItem('pluckEarBest')||'0',10);
+  return {lessons,chords:chords.length,bestcpm,streak,songs,bestTime,picked,ear};
+}
+const ACH=[
+ {id:'firststeps',ic:'🌱',n:'First Steps',d:'Finish Lesson 1',e:s=>s.lessons>=1},
+ {id:'three',ic:'🎶',n:'Three Chords',d:'Learn 3 chords',e:s=>s.chords>=3},
+ {id:'collector',ic:'🎴',n:'Chord Collector',d:'Learn 6 chords',e:s=>s.chords>=6},
+ {id:'fulldeck',ic:'🃏',n:'Full Deck',d:'Learn 12 chords',e:s=>s.chords>=12},
+ {id:'quick',ic:'⚡',n:'Quick Change',d:'30 changes/min',e:s=>s.bestcpm>=30},
+ {id:'fluent',ic:'🔥',n:'Fluent Fingers',d:'60 changes/min',e:s=>s.bestcpm>=60},
+ {id:'roll',ic:'📅',n:'On a Roll',d:'3-day streak',e:s=>s.streak>=3},
+ {id:'committed',ic:'🏅',n:'Committed',d:'7-day streak',e:s=>s.streak>=7},
+ {id:'songbird',ic:'🎵',n:'Songbird',d:'Play a full song',e:s=>s.songs>=1},
+ {id:'intime',ic:'⏱️',n:'In Time',d:'70%+ in time on a song',e:s=>s.bestTime>=70},
+ {id:'picker',ic:'🤌',n:'Fingerpicker',d:'Finish a picking lesson',e:s=>s.picked},
+ {id:'ear',ic:'👂',n:'Good Ear',d:'Score 8/10 in ear training',e:s=>s.ear>=8},
+ {id:'grad',ic:'🎓',n:'Graduate',d:'Complete all lessons',e:s=>s.lessons>=13}
+];
+function title(l){return l>=13?'Maestro':l>=11?'Picker':l>=7?'Player':l>=4?'Strummer':l>=1?'Beginner':'Newcomer';}
+
+const s=stats();
+// sticky achievements
+let earned=[];try{earned=JSON.parse(localStorage.getItem('pluckAch')||'[]');}catch(e){}
+ACH.forEach(a=>{if(a.e(s)&&!earned.includes(a.id))earned.push(a.id);});
+try{localStorage.setItem('pluckAch',JSON.stringify(earned));}catch(e){}
+
+// header
+$('hname').textContent=localStorage.getItem('pluckName')||'Player';
+$('htitle').textContent=title(s.lessons);
+$('achcount').textContent=earned.length+' of '+ACH.length+' badges';
+$('achbar').style.width=Math.round(earned.length/ACH.length*100)+'%';
+$('editName').onclick=()=>{const n=prompt('Your name?',localStorage.getItem('pluckName')||'');if(n!==null){localStorage.setItem('pluckName',n.trim()||'Player');$('hname').textContent=n.trim()||'Player';}};
+
+// stats grid
+const ST=[['Lessons',s.lessons+'/13'],['Chords',s.chords],['Streak','🔥'+s.streak],['Best change',s.bestcpm+'/min'],['Songs',s.songs],['Best timing',s.bestTime+'%']];
+$('stats').innerHTML=ST.map(([k,v])=>'<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>').join('');
+
+// achievements
+$('ach').innerHTML=ACH.map(a=>{const got=earned.includes(a.id);return '<div class="badge'+(got?'':' locked')+'"><div class="ic">'+a.ic+'</div><div><div class="bn">'+a.n+(got?' ✓':'')+'</div><div class="bd">'+a.d+'</div></div></div>';}).join('');
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
+</script>
+</body>
+</html>

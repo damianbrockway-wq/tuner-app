@@ -105,7 +105,7 @@ function answerChord(name,btn){
   if(name===cTarget){btn.classList.add('right');cScore++;ding(true);$('cresult').textContent='Yes — '+cTarget+'! 🎉';}
   else{btn.classList.add('wrong');ding(false);[...$('copts').children].forEach(b=>{if(b.textContent===cTarget)b.classList.add('right');});$('cresult').textContent='It was '+cTarget+'.';}
   $('score').textContent='Round '+cRound+'/10 · '+cScore;
-  setTimeout(()=>{ if(cRound>=10){$('cprompt').textContent='Ear training done!';$('cresult').innerHTML='You got <b>'+cScore+'/10</b>. '+(cScore>=8?'Great ear!':cScore>=5?'Solid — keep going.':'Keep practicing, it builds fast.')+'<br>Tap ▶ to play again.';cRound=0;cScore=0;} else newChordRound(); },1300);
+  setTimeout(()=>{ if(cRound>=10){$('cprompt').textContent='Ear training done!';try{const b=+(localStorage.getItem('pluckEarBest')||0);if(cScore>b)localStorage.setItem('pluckEarBest',String(cScore));}catch(_){}$('cresult').innerHTML='You got <b>'+cScore+'/10</b>. '+(cScore>=8?'Great ear!':cScore>=5?'Solid — keep going.':'Keep practicing, it builds fast.')+'<br>Tap ▶ to play again.';cRound=0;cScore=0;} else newChordRound(); },1300);
 }
 
 /* ---------- Rhythm Echo ---------- */
