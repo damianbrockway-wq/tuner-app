@@ -43,16 +43,22 @@
   .badge .ic{font-size:26px;flex:0 0 auto}
   .badge .bn{font-size:13px;font-weight:800;line-height:1.1}
   .badge .bd{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.2}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
+
+  .badge .ic svg{width:20px;height:20px;color:#9d8bff}
+  .badge.locked .ic svg{color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 <div class="wrap">
-  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">🏆 <b>PROFILE</b></div><span style="width:40px"></span></div>
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg> <b>PROFILE</b></div><span style="width:40px"></span></div>
 
   <div class="card">
     <div class="hero">
-      <div class="avatar" id="avatar">🎸</div>
+      <div class="avatar" id="avatar"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px;color:#fff"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg></div>
       <div style="flex:1;min-width:0">
         <div class="hname" id="hname">Player</div>
         <div class="htitle" id="htitle">Newcomer</div>
@@ -88,20 +94,21 @@ function stats(){
   const ear=parseInt(localStorage.getItem('pluckEarBest')||'0',10);
   return {lessons,chords:chords.length,bestcpm,streak,songs,bestTime,picked,ear};
 }
+const AI={sprout:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10"/><path d="M12 21v-7"/><path d="M12 14a5 5 0 0 1 5-5h2v1a5 5 0 0 1-5 5h-2"/><path d="M12 12a5 5 0 0 0-5-5H5v1a5 5 0 0 0 5 5h2"/></svg>',notes:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>',cards:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v13"/></svg>',layers:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/></svg>',bolt:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>',flame:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',cal:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/></svg>',medal:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 10 4 3h5l1.7 3.7"/><path d="M16.8 10 20 3h-5l-1.7 3.7"/><circle cx="12" cy="15" r="5"/></svg>',note:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg>',timer:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>',hand:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.3l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15"/></svg>',ear:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 0 4 0"/></svg>',grad:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v5"/></svg>'};
 const ACH=[
- {id:'firststeps',ic:'🌱',n:'First Steps',d:'Finish Lesson 1',e:s=>s.lessons>=1},
- {id:'three',ic:'🎶',n:'Three Chords',d:'Learn 3 chords',e:s=>s.chords>=3},
- {id:'collector',ic:'🎴',n:'Chord Collector',d:'Learn 6 chords',e:s=>s.chords>=6},
- {id:'fulldeck',ic:'🃏',n:'Full Deck',d:'Learn 12 chords',e:s=>s.chords>=12},
- {id:'quick',ic:'⚡',n:'Quick Change',d:'30 changes/min',e:s=>s.bestcpm>=30},
- {id:'fluent',ic:'🔥',n:'Fluent Fingers',d:'60 changes/min',e:s=>s.bestcpm>=60},
- {id:'roll',ic:'📅',n:'On a Roll',d:'3-day streak',e:s=>s.streak>=3},
- {id:'committed',ic:'🏅',n:'Committed',d:'7-day streak',e:s=>s.streak>=7},
- {id:'songbird',ic:'🎵',n:'Songbird',d:'Play a full song',e:s=>s.songs>=1},
- {id:'intime',ic:'⏱️',n:'In Time',d:'70%+ in time on a song',e:s=>s.bestTime>=70},
- {id:'picker',ic:'🤌',n:'Fingerpicker',d:'Finish a picking lesson',e:s=>s.picked},
- {id:'ear',ic:'👂',n:'Good Ear',d:'Score 8/10 in ear training',e:s=>s.ear>=8},
- {id:'grad',ic:'🎓',n:'Graduate',d:'Complete all lessons',e:s=>s.lessons>=13}
+ {id:'firststeps',ic:AI.sprout,n:'First Steps',d:'Finish Lesson 1',e:s=>s.lessons>=1},
+ {id:'three',ic:AI.notes,n:'Three Chords',d:'Learn 3 chords',e:s=>s.chords>=3},
+ {id:'collector',ic:AI.cards,n:'Chord Collector',d:'Learn 6 chords',e:s=>s.chords>=6},
+ {id:'fulldeck',ic:AI.layers,n:'Full Deck',d:'Learn 12 chords',e:s=>s.chords>=12},
+ {id:'quick',ic:AI.bolt,n:'Quick Change',d:'30 changes/min',e:s=>s.bestcpm>=30},
+ {id:'fluent',ic:AI.flame,n:'Fluent Fingers',d:'60 changes/min',e:s=>s.bestcpm>=60},
+ {id:'roll',ic:AI.cal,n:'On a Roll',d:'3-day streak',e:s=>s.streak>=3},
+ {id:'committed',ic:AI.medal,n:'Committed',d:'7-day streak',e:s=>s.streak>=7},
+ {id:'songbird',ic:AI.note,n:'Songbird',d:'Play a full song',e:s=>s.songs>=1},
+ {id:'intime',ic:AI.timer,n:'In Time',d:'70%+ in time on a song',e:s=>s.bestTime>=70},
+ {id:'picker',ic:AI.hand,n:'Fingerpicker',d:'Finish a picking lesson',e:s=>s.picked},
+ {id:'ear',ic:AI.ear,n:'Good Ear',d:'Score 8/10 in ear training',e:s=>s.ear>=8},
+ {id:'grad',ic:AI.grad,n:'Graduate',d:'Complete all lessons',e:s=>s.lessons>=13}
 ];
 function title(l){return l>=13?'Maestro':l>=11?'Picker':l>=7?'Player':l>=4?'Strummer':l>=1?'Beginner':'Newcomer';}
 
@@ -119,7 +126,7 @@ $('achbar').style.width=Math.round(earned.length/ACH.length*100)+'%';
 $('editName').onclick=()=>{const n=prompt('Your name?',localStorage.getItem('pluckName')||'');if(n!==null){localStorage.setItem('pluckName',n.trim()||'Player');$('hname').textContent=n.trim()||'Player';}};
 
 // stats grid
-const ST=[['Lessons',s.lessons+'/13'],['Chords',s.chords],['Streak','🔥'+s.streak],['Best change',s.bestcpm+'/min'],['Songs',s.songs],['Best timing',s.bestTime+'%']];
+const ST=[['Lessons',s.lessons+'/13'],['Chords',s.chords],['Streak',s.streak],['Best change',s.bestcpm+'/min'],['Songs',s.songs],['Best timing',s.bestTime+'%']];
 $('stats').innerHTML=ST.map(([k,v])=>'<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>').join('');
 
 // achievements

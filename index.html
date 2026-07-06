@@ -90,6 +90,18 @@
   .rk-title{z-index:2;font-size:clamp(38px,12vw,68px);font-weight:900;letter-spacing:2px;color:#fff;font-style:italic;text-shadow:0 0 8px #ff2e88,0 0 22px #ff2e88,4px 4px 0 #00fff7}
   .rk-sub{z-index:2;color:#00fff7;font-weight:800;text-shadow:0 0 10px #00fff7}
   .rk-close{z-index:2;color:rgba(255,255,255,.7);font-size:12px;margin-top:22px;font-weight:700;letter-spacing:1px}
+#rkvid{max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;background:#000;pointer-events:none}
+#rkcatch{position:absolute;inset:0;z-index:5;cursor:pointer}
+.rk-close{z-index:6;pointer-events:none;position:absolute;bottom:24px;left:0;right:0;text-align:center;z-index:3;color:rgba(255,255,255,.85);font-size:12px;font-weight:700;letter-spacing:1px}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
+
+  .navrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:var(--txt);font-size:12.5px;font-weight:700;text-decoration:none;transition:.2s}
+  .chip svg{width:14px;height:14px}
+  .chip.go{background:rgba(39,224,160,.12);border-color:rgba(39,224,160,.35);color:var(--good)}
+  .chip.dim{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -98,7 +110,7 @@
 
 <div class="wrap">
   <div class="top">
-    <div class="brand" id="brand">🎸 <b>PLUCK</b></div>
+    <div class="brand" id="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="url(#pkg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:-3px"><defs><linearGradient id="pkg" x1="0" y1="0" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#9d8bff"/><stop offset="1" stop-color="#27e0a0"/></linearGradient></defs><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg> <b>PLUCK</b></div>
     <div class="seg" id="instrument">
       <button data-inst="guitar" class="on">Guitar</button>
       <button data-inst="ukulele">Uke</button>
@@ -120,7 +132,7 @@
 
   <button class="mic" id="micBtn">Start Tuning</button>
   <div class="hint" id="hint">Tap a string to hear its note · or start the mic and play. Hold it steady in the green — it locks when you nail it.</div>
-  <div style="display:flex;gap:16px;margin-top:10px"><a href="lessons.html" style="color:#27e0a0;text-decoration:none;font-size:13px;font-weight:800">📚 Lessons →</a><a href="chord-coach.html" style="color:#9d8bff;text-decoration:none;font-size:13px;font-weight:700">🎶 Chord Coach →</a><a href="song-mode.html" style="color:#9d8bff;text-decoration:none;font-size:13px;font-weight:700">🎵 Song Mode →</a><a href="song-sheet.html" style="color:#9d8bff;text-decoration:none;font-size:13px;font-weight:700">📄 Song Sheet →</a><a href="diag.html" style="color:#9aa0c8;text-decoration:none;font-size:13px;font-weight:700">🔬 Diagnostics</a></div>
+  <div class="navrow"><a class="chip go" href="lessons.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Lessons</a><a class="chip" href="chord-coach.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg> Chord Coach</a><a class="chip" href="song-mode.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg> Songs</a><a class="chip" href="song-sheet.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg> Sheets</a><a class="chip dim" href="diag.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Diagnostics</a></div>
 </div>
 
 <script>
@@ -335,7 +347,7 @@ function loop(){
   stepParticles(dt);
   rafId=requestAnimationFrame(loop);
 }
-function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+const _cssCache={};function getCss(v){let c=_cssCache[v];if(c===undefined){c=getComputedStyle(document.documentElement).getPropertyValue(v).trim();_cssCache[v]=c;}return c;}
 
 function celebrate(s){
   markTuned(s);chime();
@@ -451,20 +463,19 @@ function rkPlay(){const ctx=ensureCtx();if(ctx.state!=='running')ctx.resume();rk
   const lead=[0,4,7,12,7,4, 2,5,9,14,9,5, 4,7,11,16,11,7, 0,7,12,16,12,7];
   const bass=[-12,-5,-10,-3,-8,-1,-12,-5];const spb=60/124/2;let t=ctx.currentTime+0.06;
   for(let r=0;r<4;r++){lead.forEach((s,k)=>rkVoice(ctx,f(s),t+k*spb,spb*0.9,'sawtooth',0.11));bass.forEach((s,k)=>rkVoice(ctx,f(s),t+k*(spb*3),spb*2.6,'square',0.16));t+=lead.length*spb;}}
-function showRick(){$('rick').classList.add('on');rkPlay();}
-function hideRick(){$('rick').classList.remove('on');rkStop();}
+function _rkClose(e){if(e){e.preventDefault();e.stopPropagation();}hideRick();}
+function showRick(){$('rick').classList.add('on');const v=$('rkvid');try{v.loop=true;v.currentTime=0;v.muted=false;v.play();}catch(e){}setTimeout(function(){document.addEventListener('pointerdown',_rkClose,true);document.addEventListener('touchstart',_rkClose,true);document.addEventListener('click',_rkClose,true);},120);}
+function hideRick(){$('rick').classList.remove('on');const v=$('rkvid');try{v.pause();}catch(e){}document.removeEventListener('pointerdown',_rkClose,true);document.removeEventListener('touchstart',_rkClose,true);document.removeEventListener('click',_rkClose,true);}
 $('brand').addEventListener('click',()=>{const n=performance.now();if(n-_btT>2500)_bt=0;_btT=n;if(++_bt>=7){_bt=0;showRick();}});
-$('rick').addEventListener('click',hideRick);
+['click','touchend','pointerup'].forEach(ev=>{$('rick').addEventListener(ev,hideRick);$('rkcatch').addEventListener(ev,e=>{e.preventDefault();hideRick();});});
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
 }
 </script>
 <div id="rick">
-  <div class="rk-grid"></div><div class="rk-scan"></div>
-  <div class="rk-dancer">🕺</div>
-  <div class="rk-title">RICKROLL'D</div>
-  <div class="rk-sub">you found the secret 🎶</div>
+  <video id="rkvid" src="prize.mp4" playsinline preload="auto" loop></video>
   <div class="rk-close">tap anywhere to close</div>
+  <div id="rkcatch"></div>
 </div>
 </body>
 </html>

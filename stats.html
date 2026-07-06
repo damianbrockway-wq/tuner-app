@@ -46,12 +46,15 @@
   .chg .tag{font-size:10px;font-weight:800;flex:0 0 auto;width:74px;text-align:right}
   .empty{color:var(--muted);font-size:13px;text-align:center;line-height:1.6;padding:8px}
   a.cta{display:block;text-align:center;text-decoration:none;color:#fff;font-weight:800;padding:13px;border-radius:14px;background:linear-gradient(90deg,#7c6cff,#5b8cff)}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 <div class="wrap">
-  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">📊 <b>PROGRESS</b></div><span style="width:40px"></span></div>
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v2"/><path d="M12 11v7"/><path d="M17 7v11"/></svg> <b>PROGRESS</b></div><span style="width:40px"></span></div>
 
   <div class="card statrow">
     <div><div class="lbl">Streak</div><div class="big" id="streak">—</div><div class="lbl" id="lastdate" style="letter-spacing:.3px;text-transform:none"></div></div>
@@ -70,7 +73,7 @@
     <div id="changes"></div>
   </div>
 
-  <a class="cta" href="practice.html">🎯 Practice your weakest →</a>
+  <a class="cta" href="practice.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> Practice your weakest →</a>
 </div>
 
 <script>
@@ -82,7 +85,7 @@ const TOTAL_LESSONS=10;
 
 // streak
 const st=getStreak();const today=new Date().toDateString();
-if(st.last){$('streak').textContent='🔥 '+(st.count||1);$('lastdate').textContent=st.last===today?'practiced today':('last: '+st.last.replace(/^\w+ /,''));}
+if(st.last){$('streak').textContent=(st.count||1);$('lastdate').textContent=st.last===today?'practiced today':('last: '+st.last.replace(/^\w+ /,''));}
 else{$('streak').textContent='—';$('lastdate').textContent='no practice yet';}
 
 // lessons + chords learned

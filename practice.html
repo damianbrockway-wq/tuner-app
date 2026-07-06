@@ -44,17 +44,20 @@
   .state{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;height:18px;opacity:.85}
   .flash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 42%,rgba(39,224,160,.45),transparent 60%)}
   .flash.go{animation:flash .5s ease-out}@keyframes flash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 <div class="flash" id="flash"></div>
 <div class="wrap">
-  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">🎯 <b>PRACTICE</b></div><span style="width:40px"></span></div>
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> <b>PRACTICE</b></div><span style="width:40px"></span></div>
 
   <!-- setup -->
   <div id="setup" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
-    <div class="row"><button class="primary" id="todayBtn">🎯 Daily Practice</button></div>
+    <div class="row"><button class="primary" id="todayBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> Daily Practice</button></div>
     <div class="best" id="streak"></div>
     <div class="lbl" style="margin-top:6px;opacity:.7">— or drill one pair —</div>
     <div class="lbl">One-minute changes</div>
@@ -207,7 +210,7 @@ function finishDrill(){
   const best=Skill.best(A,B);
   $('rbest').textContent='Best: '+best+' changes/min';
   let msg;
-  if(count>=60)msg="Fluent! That change is solid. 🎉";
+  if(count>=60)msg="Fluent! That change is solid.";
   else if(count>=30)msg="Great — that's the 'ready to use it in songs' level.";
   else if(count>=15)msg="Good progress. Aim for 30 next time.";
   else msg="Keep at it — speed comes with reps. Slow and clean first.";
@@ -217,7 +220,7 @@ function finishDrill(){
 /* ---------- session + streak ---------- */
 function weakestPairs(k){const pairs=allPairs(learnedChords());pairs.sort((x,y)=>pairPriority(...y)-pairPriority(...x));return pairs.slice(0,k);}
 function getStreak(){try{return JSON.parse(localStorage.getItem('pluckStreak')||'{}');}catch(e){return{};}}
-function streakText(){const s=getStreak();if(!s.last)return 'Practice daily to build a streak 🔥';const t=new Date().toDateString();if(s.last===t)return '🔥 '+s.count+'-day streak — done today';return '🔥 '+s.count+'-day streak — practice today to keep it';}
+function streakText(){const s=getStreak();if(!s.last)return 'Practice daily to build a streak';const t=new Date().toDateString();if(s.last===t)return s.count+'-day streak ✓ done today';return s.count+'-day streak — practice today to keep it';}
 function bumpStreak(){const s=getStreak(),t=new Date().toDateString();if(s.last===t)return s.count;const y=new Date(Date.now()-86400000).toDateString();const count=(s.last===y)?(s.count||0)+1:1;localStorage.setItem('pluckStreak',JSON.stringify({last:t,count}));return count;}
 function pkey(p){return Skill.changeKey(p[0],p[1]);}
 function buildSession(){

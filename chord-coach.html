@@ -59,17 +59,22 @@
   .pop{position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);z-index:6;font-size:90px;opacity:0;pointer-events:none}
   .pop.go{animation:pop .8s ease-out}
   @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
+
+  .popok{display:flex;align-items:center;justify-content:center;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(39,224,160,.3),transparent 72%);color:var(--good);font-size:72px;font-weight:800;text-shadow:0 0 34px rgba(39,224,160,.9)}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="flash" id="flash"></div>
-<div class="pop" id="pop">✅</div>
+<div class="pop" id="pop"><span class="popok">✓</span></div>
 
 <div class="wrap">
   <div class="top">
     <a class="back" href="index.html">← Pluck</a>
-    <div class="brand">🎶 <b>CHORD COACH</b></div>
+    <div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg> <b>CHORD COACH</b></div>
     <div class="score" id="score">0 ✓</div>
   </div>
 
@@ -84,7 +89,7 @@
 
   <div class="row">
     <button class="primary" id="startBtn">Start</button>
-    <button class="ghost" id="skipBtn" style="display:none">Skip ⏭</button>
+    <button class="ghost" id="skipBtn" style="display:none">Skip →</button>
   </div>
   <div class="hint" id="hint">Pick the chords you want to drill, tap Start, and play the chord shown. It chimes when you nail it, then moves to the next.</div>
   <div class="hint" id="dbg" style="display:none"></div>

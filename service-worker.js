@@ -1,7 +1,8 @@
-const CACHE = 'tuner-v58';
+const CACHE = 'tuner-v66';
 const ASSETS = [
   './',
   './index.html',
+  './prize.mp4',
   './chord-coach.html',
   './song-mode.html',
   './lesson.html',
@@ -37,11 +38,14 @@ self.addEventListener('fetch', e => {
     (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'));
 
   if (isPage) {
-    // Network-first for the page: always load the latest when online, fall back to cache offline.
+    // Stale-while-revalidate: serve cached page instantly, refresh in the background.
     e.respondWith(
-      fetch(req)
-        .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return r; })
-        .catch(() => caches.match(req).then(h => h || caches.match('./index.html')))
+      caches.match(req).then(cached => {
+        const net = fetch(req)
+          .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return r; })
+          .catch(() => cached || caches.match('./index.html'));
+        return cached || net;
+      })
     );
     return;
   }

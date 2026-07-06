@@ -43,11 +43,14 @@
   td.ok{color:var(--good)}td.no{color:var(--bad)}
   textarea{width:100%;height:150px;background:#11142a;color:var(--txt);border:1px solid rgba(255,255,255,.12);border-radius:10px;font-size:11px;font-family:ui-monospace,monospace;padding:8px;-webkit-user-select:text;user-select:text}
   .hint{font-size:11px;color:var(--muted);line-height:1.5}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand">🔬 <b>DIAGNOSTICS</b></div><span style="width:40px"></span></div>
+  <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> <b>DIAGNOSTICS</b></div><span style="width:40px"></span></div>
 
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center">
@@ -172,7 +175,7 @@ function finishCheck(){
     html+='<tr><td>'+STR_LBL[i]+'</td><td>'+(fr?fr:'open')+'</td><td class="'+(ok?'ok':'no')+'">'+(ok?'✓ rings':'✗ muted')+'</td></tr>';
     if(!ok&&fr)tips.push('The <b>'+STR_LBL[i]+'</b> string (fret '+fr+') isn\'t ringing — that finger may be lying flat (use the very tip), not pressing just behind the fret, or it\'s brushing this string. Arch the knuckle.');
     else if(!ok)tips.push('The open <b>'+STR_LBL[i]+'</b> string isn\'t ringing — another finger is probably touching it. Keep fingers arched on their tips.');}
-  html+='</table>'+(tips.length?'<div class="hint" style="margin-top:8px">'+tips.join('<br><br>')+'</div>':'<div class="hint" style="margin-top:8px;color:var(--good)">All four strings rang — clean chord! 🎉</div>');
+  html+='</table>'+(tips.length?'<div class="hint" style="margin-top:8px">'+tips.join('<br><br>')+'</div>':'<div class="hint" style="margin-top:8px;color:var(--good)">All four strings rang — clean chord ✓</div>');
   $('results').innerHTML=html;$('resultsCard').style.display='block';
   try{localStorage.setItem('pluckRepCheck',JSON.stringify({date:new Date().toLocaleString(),chord:csName,rang:csRang.slice()}));}catch(e){}
   renderReport();
@@ -231,7 +234,7 @@ function loop(){
   cbars.forEach((b,i)=>{b.style.height=Math.max(2,a.chroma[i]/maxc*52)+'px';b.classList.toggle('lit',a.chroma[i]>0.45*maxc);});
   let best='—',bestS=0;for(const n of POOL){const s=cosine(a.chroma,TPL[n]);if(s>bestS){bestS=s;best=n;}}
   $('best').textContent=a.rms<0.01?'—':best;$('bestpct').textContent=a.rms<0.01?'':Math.round(bestS*100)+'%';
-  if(state==='live'){ if(!sawSignal && performance.now()-noAudioT>2500){ $('prompt').innerHTML='⚠️ No sound reaching the app. Tap <b>Stop mic</b> then <b>Start mic</b>; close other Pluck tabs; check Settings → mic permission.'; } else if(sawSignal && $('prompt').innerHTML.indexOf('No sound')>=0){ $('prompt').textContent=''; } }
+  if(state==='live'){ if(!sawSignal && performance.now()-noAudioT>2500){ $('prompt').innerHTML='<b style="color:var(--warn)">No sound reaching the app.</b> Tap <b>Stop mic</b> then <b>Start mic</b>; close other Pluck tabs; check Settings → mic permission.'; } else if(sawSignal && $('prompt').innerHTML.indexOf('No sound')>=0){ $('prompt').textContent=''; } }
   if(a.onset){$('odot').classList.add('on');clearTimeout(strumT);strumT=setTimeout(()=>$('odot').classList.remove('on'),130);}
   $('ocount').textContent=onsetCount+' strums';
   $('onsetdbg').textContent='rms '+a.rms.toFixed(3)+' · env '+a.env.toFixed(3)+' · rise '+a.rise.toFixed(4);

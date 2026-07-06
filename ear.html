@@ -43,12 +43,15 @@
   button.ghost{padding:12px 16px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
   .big{font-size:58px;font-weight:800}
+
+  .ic{width:15px;height:15px;vertical-align:-2.5px}
+  .brand svg{color:#9d8bff}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 <div class="wrap">
-  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand">👂 <b>EAR & RHYTHM</b></div><div class="score" id="score"></div></div>
+  <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 0 4 0"/></svg> <b>EAR & RHYTHM</b></div><div class="score" id="score"></div></div>
   <div class="seg" id="modeseg"><button data-m="chord" class="on">Name that Chord</button><button data-m="rhythm">Rhythm Echo</button></div>
 
   <!-- CHORD EAR -->
@@ -102,7 +105,7 @@ function newChordRound(){
 }
 function answerChord(name,btn){
   if(cLocked)return;cLocked=true;
-  if(name===cTarget){btn.classList.add('right');cScore++;ding(true);$('cresult').textContent='Yes — '+cTarget+'! 🎉';}
+  if(name===cTarget){btn.classList.add('right');cScore++;ding(true);$('cresult').textContent='Yes — '+cTarget+' ✓';}
   else{btn.classList.add('wrong');ding(false);[...$('copts').children].forEach(b=>{if(b.textContent===cTarget)b.classList.add('right');});$('cresult').textContent='It was '+cTarget+'.';}
   $('score').textContent='Round '+cRound+'/10 · '+cScore;
   setTimeout(()=>{ if(cRound>=10){$('cprompt').textContent='Ear training done!';try{const b=+(localStorage.getItem('pluckEarBest')||0);if(cScore>b)localStorage.setItem('pluckEarBest',String(cScore));}catch(_){}$('cresult').innerHTML='You got <b>'+cScore+'/10</b>. '+(cScore>=8?'Great ear!':cScore>=5?'Solid — keep going.':'Keep practicing, it builds fast.')+'<br>Tap ▶ to play again.';cRound=0;cScore=0;} else newChordRound(); },1300);
@@ -146,7 +149,7 @@ function scoreRhythm(){
   err/=ei.length;
   const pct=Math.max(0,Math.round((1-err*3)*100));
   ding(pct>=60);
-  $('rprompt').textContent=pct>=85?'Spot on! 🎯':pct>=60?'Close!':'Not quite';
+  $('rprompt').textContent=pct>=85?'Spot on!':pct>=60?'Close!':'Not quite';
   $('rresult').textContent='Rhythm match: '+pct+'%';
   $('rnext').style.display='';
 }
