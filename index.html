@@ -144,7 +144,7 @@
 
   <button class="mic" id="micBtn">Start Tuning</button>
   <div class="hint" id="hint">Tap a string to hear its note · or start the mic and play. Hold it steady in the green — it locks when you nail it.</div>
-  <div class="navrow"><a class="chip" href="chord-coach.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg> Chord Coach</a><a class="chip" href="song-sheet.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg> Sheets</a><a class="chip dim" href="diag.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Diagnostics</a></div>
+  <div class="navrow"><a class="chip" href="chord-coach.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg> Chord Coach</a><a class="chip" id="chordsChip" href="chords-guitar.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16"/><path d="M11 4v16"/><path d="M15 4v16"/><circle cx="9" cy="9" r="1.3" fill="currentColor"/><circle cx="13" cy="13" r="1.3" fill="currentColor"/></svg> Chords</a><a class="chip" href="song-sheet.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg> Sheets</a><a class="chip dim" href="diag.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Diagnostics</a></div>
 </div>
 
 <script>
@@ -579,13 +579,15 @@ function drawParticles(){
 /* ---------- wiring ---------- */
 $('instrument').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  inst=b.dataset.inst;try{localStorage.setItem('pluckInst',inst);}catch(e){}tuned={};
+  inst=b.dataset.inst;try{localStorage.setItem('pluckInst',inst);}catch(e){}tuned={};if(typeof updateChordsChip==='function')updateChordsChip();
   target=null;prevTargetKey='';lockHold=0;lockProg=0;locked=false;
   stabWin.length=0;switchCand=null;pinnedIdx=-1;history.length=0;
   [...$('instrument').children].forEach(c=>c.classList.toggle('on',c===b));
   buildStrings();
 });
 [...$('instrument').children].forEach(c=>c.classList.toggle('on',c.dataset.inst===inst));
+function updateChordsChip(){const el=$('chordsChip');if(el)el.href=(inst==='ukulele')?'chords-uke.html':'chords-guitar.html';}
+updateChordsChip();
 $('micBtn').addEventListener('click',toggleMic);
 function showMicLost(){$('micLost').classList.add('on');}
 function hideMicLost(){$('micLost').classList.remove('on');}

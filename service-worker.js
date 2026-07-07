@@ -1,8 +1,10 @@
-const CACHE = 'tuner-v70';
+const CACHE = 'tuner-v71';
 const ASSETS = [
   './',
   './index.html',
   './econ.js',
+  './chords-guitar.html',
+  './chords-uke.html',
   './prize.mp4',
   './chord-coach.html',
   './song-mode.html',
