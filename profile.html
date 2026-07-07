@@ -61,6 +61,7 @@
 .tabbar a svg{width:20px;height:20px}
 .tabbar a.on{color:#9d8bff}
 </style>
+<script src="econ.js"></script>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
@@ -147,7 +148,7 @@ $('achbar').style.width=Math.round(earned.length/ACH.length*100)+'%';
 $('editName').onclick=()=>{const n=prompt('Your name?',localStorage.getItem('pluckName')||'');if(n!==null){localStorage.setItem('pluckName',n.trim()||'Player');$('hname').textContent=n.trim()||'Player';}};
 
 // stats grid
-const ST=[['Lessons',s.lessons+'/13'],['Chords',s.chords],['Streak',s.streak],['Best change',s.bestcpm+'/min'],['Songs',s.songs],['Best timing',s.bestTime+'%']];
+const _pk=(window.Pluck?Pluck.picks():0);const ST=[['Lessons',s.lessons+'/13'],['Chords',s.chords],['Streak',s.streak],['Best change',s.bestcpm+'/min'],['Songs',s.songs],['Best timing',s.bestTime+'%'],['🎸 Picks',_pk]];
 $('stats').innerHTML=ST.map(([k,v])=>'<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>').join('');
 
 // achievements

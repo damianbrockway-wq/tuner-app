@@ -112,7 +112,16 @@
   .seg button.on{background:linear-gradient(90deg,#7c6cff,#5b8cff);color:#fff;box-shadow:0 4px 14px rgba(124,108,255,.45)}
   .card.ukeonly{opacity:.45;cursor:default;pointer-events:none}
   .card .cc span.uketag{background:rgba(255,255,255,.08);color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-size:9px}
+  .picks{font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap;min-width:48px;text-align:right}
+  .card.locked{opacity:.9}
+  .card.locked .ct{color:var(--muted)}
+  .lockrow{display:flex;align-items:center;gap:8px;margin-top:2px}
+  .lockrow .lk{font-size:11px;font-weight:800;color:var(--warn);letter-spacing:.3px}
+  .unlockbtn{margin-left:auto;font-size:12px;font-weight:800;border:none;border-radius:999px;padding:6px 12px;cursor:pointer;color:#04120d;background:linear-gradient(90deg,#27e0a0,#00fff7);box-shadow:0 3px 12px rgba(39,224,160,.35)}
+  .unlockbtn:disabled{background:rgba(255,255,255,.12);color:var(--muted);box-shadow:none;cursor:default}
+  .bonusflag{font-size:10px;font-weight:800;letter-spacing:1px;color:#00fff7;text-shadow:0 0 8px rgba(0,255,247,.6)}
 </style>
+<script src="econ.js"></script>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
@@ -123,7 +132,7 @@
 <div class="wrap">
   <!-- LIST VIEW -->
   <div id="listView" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
-    <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg> <b>SONGS</b></div><span style="width:48px"></span></div>
+    <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg> <b>SONGS</b></div><span class="picks" data-picks title="Guitar picks — earn them by clearing lessons, finishing songs, practising, and finding secrets">🎸 0</span></div>
     <div class="seg" id="instseg"><button data-inst="uke">Uke</button><button data-inst="guitar">Guitar</button></div>
   <div class="instnote" id="instnote">UKULELE</div>
     <div class="hint">Pick a song. Chord-only arrangements — play the highlighted chord and it advances when you nail it.</div>
@@ -230,7 +239,15 @@ const SONGS=[
  {title:'The Prodigal',artist:'Josiah Queen · 2024',diff:'easy',
   sections:[{name:'Intro',chords:['Am','F','C','G']},{name:'Verse',chords:['Am','F','C','G','Am','F','C','G']},{name:'Chorus',chords:['C','G','Am','F','C','G','Am','F']}]},
  {title:'God of Miracles',artist:'Josiah Queen · 2020',diff:'easy',
-  sections:[{name:'Intro',chords:['C','G','Am','F']},{name:'Verse',chords:['C','G','Am','F','C','G','Am','F']},{name:'Chorus',chords:['C','G','Am','F','C','G','Am','F']}]}
+  sections:[{name:'Intro',chords:['C','G','Am','F']},{name:'Verse',chords:['C','G','Am','F','C','G','Am','F']},{name:'Chorus',chords:['C','G','Am','F','C','G','Am','F']}]},
+ {title:'Hey Soul Sister',artist:'Train · 2009',diff:'easy',bonus:true,lk:{by:'lesson',n:3},
+  sections:[{name:'Intro',chords:['C','G','Am','F']},{name:'Verse',chords:['C','G','Am','F','C','G','Am','F']},{name:'Chorus',chords:['C','G','Am','F','C','G','Am','F']}]},
+ {title:'Sweet Caroline',artist:'Neil Diamond · 1969',diff:'easy',bonus:true,lk:{by:'picks',cost:5,id:'caroline'},
+  sections:[{name:'Verse',chords:['C','C','F','F','G','G','C','C']},{name:'Chorus',chords:['F','G','C','C','F','G','C','C']}]},
+ {title:'Riptide',artist:'Vance Joy · 2013',diff:'med',bonus:true,lk:{by:'picks',cost:8,id:'riptide'},
+  sections:[{name:'Intro',chords:['Am','G','C']},{name:'Verse',chords:['Am','G','C','C','Am','G','C','C']},{name:'Chorus',chords:['Am','G','C','F','Am','G','C','F']}]},
+ {title:'★ Perfect-Pitch Jam',artist:'secret · you found it',diff:'easy',bonus:true,lk:{by:'egg',id:'perfectpitch'},
+  sections:[{name:'Neon loop',chords:['C','G','Am','F','C','G','F','G']}]}
 ];
 
 const $=id=>document.getElementById(id);
@@ -242,6 +259,16 @@ let lastJudgedBeat=-1, beatStats={total:0,played:0,onTime:0};
 let calibrating=false, calOnsets=[], calT0=0, calSPB=0.5;
 
 /* ---------- list view ---------- */
+function songUnlocked(s){
+  if(!s.lk)return true;
+  if(s.lk.by==='lesson')return localStorage.getItem('pluckLesson'+s.lk.n)==='done';
+  return (window.Pluck&&Pluck.hasUnlock(s.lk.id));
+}
+function lockLabel(s){
+  if(s.lk.by==='lesson')return 'Finish Lesson '+s.lk.n+' to unlock';
+  if(s.lk.by==='egg')return '🔒 Secret — find it to unlock';
+  return '🔒 Locked';
+}
 function buildList(){
   const l=$('songlist');l.innerHTML='';
   SONGS.forEach((s,i)=>{
@@ -249,14 +276,28 @@ function buildList(){
     const dcls=s.diff==='easy'?'d-easy':s.diff==='med'?'d-med':'d-hard';
     const dlabel=s.diff==='easy'?'Easy':s.diff==='med'?'Medium':'Tricky';
     const gOk=inst!=='guitar'||songPlayable(s);
-    const card=document.createElement('div');card.className='card'+(gOk?'':' ukeonly');
-    card.innerHTML='<div class="ct">'+s.title+'</div><div class="ca">'+s.artist+'</div>'+
+    const open=songUnlocked(s);
+    const card=document.createElement('div');card.className='card'+(gOk?'':' ukeonly')+(open?'':' locked');
+    let html='<div class="ct">'+(s.bonus?'<span class="bonusflag">BONUS</span> ':'')+s.title+'</div><div class="ca">'+s.artist+'</div>'+
       '<div class="cc">'+used.map(c=>'<span>'+c+'</span>').join('')+(gOk?'':'<span class="uketag">uke only</span>')+'<span class="diff '+dcls+'" style="background:none">'+dlabel+'</span></div>';
-    if(gOk)card.onclick=()=>loadSong(i);
+    if(!open){
+      html+='<div class="lockrow"><span class="lk">'+lockLabel(s)+'</span>';
+      if(s.lk.by==='picks'){const have=(window.Pluck?Pluck.picks():0);html+='<button class="unlockbtn" '+(have>=s.lk.cost?'':'disabled')+' data-unlock="'+i+'">Unlock · 🎸'+s.lk.cost+'</button>';}
+      html+='</div>';
+    }
+    card.innerHTML=html;
+    if(open&&gOk)card.onclick=()=>loadSong(i);
     l.appendChild(card);
   });
+  l.querySelectorAll('[data-unlock]').forEach(b=>b.addEventListener('click',ev=>{ev.stopPropagation();tryUnlock(+b.dataset.unlock);}));
+}
+function tryUnlock(i){
+  const s=SONGS[i];if(!s.lk||s.lk.by!=='picks'||!window.Pluck)return;
+  if(Pluck.picks()<s.lk.cost){Pluck.toast('Need 🎸'+(s.lk.cost-Pluck.picks())+' more');return;}
+  if(Pluck.spend(s.lk.cost)){Pluck.unlock(s.lk.id);Pluck.toast('🔓 Unlocked '+s.title+'!','good');buildList();}
 }
 function loadSong(i){
+  if(!songUnlocked(SONGS[i]))return;
   if(inst==='guitar'&&!songPlayable(SONGS[i]))return;
   if(running)stopMic();
   SONG=SONGS[i];TL=[];
@@ -525,7 +566,9 @@ function advance(){
 function songComplete(){
   flashGo();
   const skey=(inst==='guitar'?'G:':'')+SONG.title;
-  try{const sd=JSON.parse(localStorage.getItem('pluckSongsDone')||'{}');sd[skey]=true;localStorage.setItem('pluckSongsDone',JSON.stringify(sd));}catch(e){}
+  let firstClear=false;
+  try{const sd=JSON.parse(localStorage.getItem('pluckSongsDone')||'{}');firstClear=!sd[skey];sd[skey]=true;localStorage.setItem('pluckSongsDone',JSON.stringify(sd));}catch(e){}
+  if(window.Pluck){if(firstClear)Pluck.addPicks(3,'first clear'); else Pluck.addPicks(1,'song replay');}
   $('state').textContent='you played it ✓';
   $('name').textContent='✓';$('name').style.color='var(--good)';
   running=false;cancelAnimationFrame(rafId);if(watchTimer){clearInterval(watchTimer);watchTimer=null;}stopClock();releaseWake();
@@ -533,7 +576,8 @@ function songComplete(){
   $('startBtn').textContent=mode==='tempo'?'Play':'Start';$('startBtn').classList.remove('live');
   if(beatStats.total>0){const pct=Math.round(100*beatStats.onTime/beatStats.total);let best=0,nb=false;
     try{const o=JSON.parse(localStorage.getItem('pluckSongTime')||'{}');best=o[skey]||0;if(pct>best){best=pct;nb=true;o[skey]=pct;localStorage.setItem('pluckSongTime',JSON.stringify(o));}}catch(e){}
-    $('state').innerHTML=pct+'% in time ✓'+(nb?' — new best!':' · best '+best+'%');}
+    $('state').innerHTML=pct+'% in time ✓'+(nb?' — new best!':' · best '+best+'%');
+    if(window.Pluck&&pct>=90){Pluck.addPicks(2,'PERFECT RUN 🔥');}}
 }
 
 /* ---------- wiring ---------- */

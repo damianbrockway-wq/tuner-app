@@ -41,11 +41,14 @@ progress, NOT dark patterns (learning app, incl. kids).
 - Rick Roll easter egg (done)
 
 ## Build status
-[x] Rick Roll easter egg (tap the guitar logo 7x on the tuner)
-[ ] Badge-earned + lesson-complete fireworks pass
-[ ] Combo system (practice + wait-mode songs)
-[ ] A440 hold easter egg
-[ ] Earnable 80s themes / skins
+[x] Rick Roll easter egg (tap the guitar logo 7x on the tuner) — now plays an uploaded video prize (loop + tap-anywhere close)
+[x] "Picks" currency (econ.js) — earn by clearing lessons (+3), finishing songs (+3 first clear / +1 replay), PERFECT RUN 90%+ (+2), practice sessions (+1..+5, streak bonus)
+[x] Unlockable BONUS songs in Song Mode — 4 paths: finish a lesson (Hey Soul Sister @ L3), spend picks (Sweet Caroline 5, Riptide 8), or secret egg
+[x] A440-hold easter egg — hold the A string dead-on ~3s -> PERFECT PITCH, +5 picks, unlocks the secret "Perfect-Pitch Jam" bonus song
+[x] Neon toast + picks badge (Songs header, Lessons hub, Profile stat)
+[ ] Badge-earned + lesson-complete FIREWORKS pass (visual burst; picks reward already fires)
+[ ] Full combo counter (2x/3x/5x climbing chime) — milestone picks partly in (PERFECT RUN)
+[ ] Earnable 80s themes / skins (spend picks)
 [ ] Streak freeze + daily challenge
 
 Copyright note: the Rick Roll is an ORIGINAL 80s-synth homage + the meme name —

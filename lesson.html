@@ -67,6 +67,7 @@
   .instnote{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-align:center;margin:-2px 0 2px}
   .instnote b{color:var(--warn);font-weight:800;letter-spacing:.3px;text-transform:none}
 </style>
+<script src="econ.js"></script>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
@@ -583,7 +584,7 @@ function getCss(v){return getComputedStyle(document.documentElement).getProperty
 /* ---------- buttons ---------- */
 $('go').addEventListener('click',()=>{
   if(step && (step.type==='info'||step.type==='tune'||step.type==='done'||step.type==='metro')){
-    if(step.type==='done'){ try{localStorage.setItem((GTR?'pluckGLesson':'pluckLesson')+LNUM,'done');}catch(e){} location.href='lessons.html'; return; }
+    if(step.type==='done'){ try{localStorage.setItem((GTR?'pluckGLesson':'pluckLesson')+LNUM,'done');}catch(e){} try{if(window.Pluck)Pluck.awardLesson(LNUM,GTR);}catch(e){} setTimeout(function(){location.href='lessons.html';}, 1200); return; }
     stopMetro(); si++; renderStep();
   }
 });

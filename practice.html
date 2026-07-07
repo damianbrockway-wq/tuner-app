@@ -55,6 +55,7 @@
   .instnote{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-align:center;margin:-2px 0 2px}
   .instnote b{color:var(--warn);font-weight:800;letter-spacing:.3px;text-transform:none}
 </style>
+<script src="econ.js"></script>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
@@ -247,7 +248,8 @@ function buildSession(){
 function startSession(){const plan=buildSession();if(!plan.length){inSession=false;drillSecs=60;startDrill();return;}sessionQueue=plan.slice();sessionLen=plan.length;sessionResults=[];inSession=true;nextSessionDrill();}
 function nextSessionDrill(){if(!sessionQueue.length){showSessionSummary();return;}const item=sessionQueue.shift();[A,B]=item.pair;drillSecs=item.secs;sessionPhase=item.label+' · '+(sessionLen-sessionQueue.length)+' of '+sessionLen;startDrill();}
 function showSessionSummary(){
-  inSession=false;const total=sessionResults.reduce((s,r)=>s+r.count,0);bumpStreak();
+  inSession=false;const total=sessionResults.reduce((s,r)=>s+r.count,0);const streakN=bumpStreak();
+  if(window.Pluck){let earned=1+Math.min(4,Math.floor(total/12));if(streakN>=3)earned+=1;Pluck.addPicks(earned,'practice'+(streakN>=3?' · '+streakN+'-day streak':''));}
   $('drill').style.display='none';$('result').style.display='flex';
   $('rcount').textContent=total;$('rsub').textContent='changes in your session';
   $('rbest').textContent=streakText();

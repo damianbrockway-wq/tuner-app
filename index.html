@@ -113,6 +113,7 @@
 .tabbar a svg{width:20px;height:20px}
 .tabbar a.on{color:#9d8bff}
 </style>
+<script src="econ.js"></script>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
@@ -297,7 +298,7 @@ function stopMic(){
 const buf=new Float32Array(4096);
 let history=[];           // recent valid freqs (median filter)
 let smoothCents=0;        // eased needle value
-let target=null, lockHold=0, lockProg=0, locked=false, lastT=performance.now();
+let target=null, lockHold=0, lockProg=0, locked=false, lastT=performance.now(), _a440=0;
 let particles=[];
 let graceUntil=0;
 let prevTargetKey='';                    // lock state resets when this changes
@@ -425,6 +426,8 @@ function tick(res,now,dt){
     // ---- lock logic: credit needs a clean, steady, monophonic reading;
     //      the lock itself only fires once the window is stable for 350ms ----
     const a=Math.abs(cents);
+    // ---- easter egg: dead-on the A4 (440) string, held ~3s -> Perfect Pitch ----
+    if(s.n==='A'&&s.o===4&&a<=2){_a440+=dt;if(_a440>=3){_a440=-999;perfectPitch();}} else if(a>4){_a440=0;}
     if(a<=8&&spreadOk&&!res.poly){lockHold+=dt*1.4;}
     else if(a<=18&&locked){/* stay locked */}
     else if(a<=15){/* hold credit */}
@@ -472,6 +475,13 @@ function tick(res,now,dt){
 
 const _cssCache={};function getCss(v){let c=_cssCache[v];if(c===undefined){c=getComputedStyle(document.documentElement).getPropertyValue(v).trim();_cssCache[v]=c;}return c;}
 
+function perfectPitch(){
+  try{if(navigator.vibrate)navigator.vibrate([12,30,12,30,40]);}catch(e){}
+  if(!window.Pluck)return;
+  const first=Pluck.unlock('perfectpitch');
+  if(first){Pluck.addPicks(5,'PERFECT PITCH 🎯');Pluck.toast('🎯 PERFECT PITCH — secret song unlocked in Songs!','good',3600);}
+  else{Pluck.toast('🎯 Perfect pitch! (already unlocked)','good');}
+}
 function celebrate(s){
   markTuned(s);chime();
   if(navigator.vibrate)navigator.vibrate([18,40,18]);
