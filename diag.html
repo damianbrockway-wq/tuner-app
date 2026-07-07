@@ -15,7 +15,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;margin:0}
   body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 16px);-webkit-user-select:none;user-select:none}
+    padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 76px);-webkit-user-select:none;user-select:none}
   .wrap{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
   .top{display:flex;align-items:center;justify-content:space-between}
   a.back{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
@@ -46,6 +46,10 @@
 
   .ic{width:15px;height:15px;vertical-align:-2.5px}
   .brand svg{color:#9d8bff}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;align-items:center;padding:6px 10px calc(env(safe-area-inset-bottom) + 6px);background:rgba(10,8,20,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:10px;font-weight:700;letter-spacing:.3px;min-width:56px;padding:4px 0}
+.tabbar a svg{width:20px;height:20px}
+.tabbar a.on{color:#9d8bff}
 </style>
 </head>
 <body>
@@ -76,6 +80,13 @@
     <button class="ghost" id="checkBtn">Check chord</button>
   </div>
 
+  <div class="row" id="instRow" style="align-items:center;gap:8px">
+    <span class="lbl" style="align-self:center">Chord test instrument</span>
+    <button class="ghost active" id="instUke" style="padding:8px 14px;font-size:12px">Uke</button>
+    <button class="ghost" id="instGtr" style="padding:8px 14px;font-size:12px">Guitar</button>
+  </div>
+  <div class="hint">Guitar mode lowers the chord-test chroma floor to 75 Hz and tests E, Em, A, Am, D, Dm, G, C.</div>
+
   <div class="prompt" id="prompt"></div>
   <div id="chorddiagram" style="text-align:center"></div>
   <div class="row" id="testBtns" style="display:none;justify-content:center;margin-top:8px"><button id="captureBtn">● Capture</button><button class="ghost" id="skipChordBtn">Skip</button></div>
@@ -93,6 +104,18 @@
     <textarea id="summary" readonly></textarea>
     <div class="hint" id="saved"></div>
   </div>
+  <div class="card">
+    <div class="lbl">Reference pitch (A4)</div>
+    <div class="row" style="align-items:center;margin-top:8px">
+      <div class="big" id="a4lbl" style="font-size:22px">A4 = 440 Hz</div>
+      <button class="ghost" id="a4reset" style="padding:6px 12px;font-size:11px;margin-left:auto">Reset to 440</button>
+    </div>
+    <input type="range" id="a4range" min="415" max="445" step="1" value="440" style="width:100%;margin-top:10px;accent-color:var(--accent)">
+    <div class="hint" style="margin-top:6px">The tuner uses this on next open.</div>
+    <div class="lbl" style="margin-top:14px">Mic settings last seen</div>
+    <pre id="micset" class="hint" style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:10px;margin:6px 0 0"></pre>
+  </div>
+
   <div class="hint">Tip: tap <b>Test chords</b> and play each chord it asks for, then <b>Test strums</b> and strum 10 times. Then <b>Save tuned settings</b> — Chord Coach and Song Mode will use them. Or paste the summary to share.</div>
 </div>
 
@@ -113,6 +136,19 @@ const CHORDS={
 const POOL=Object.keys(CHORDS);
 const TPL={};POOL.forEach(n=>{const t=new Array(12).fill(0);CHORDS[n].pcs.forEach(p=>t[p]=1);TPL[n]=t;});
 const TESTSEQ=['C','Am','F','G','C7','G7','Dm','Em','D','A','E','F#m'];
+// guitar chord discrimination spike — pitch-class sets (pc 0 = C)
+const GCHORDS={
+  'E' :{pcs:[4,8,11], frets:[0,2,2,1,0,0],    fingers:[0,2,3,1,0,0]},
+  'Em':{pcs:[4,7,11], frets:[0,2,2,0,0,0],    fingers:[0,2,3,0,0,0]},
+  'A' :{pcs:[9,1,4],  frets:[-1,0,2,2,2,0],   fingers:[0,0,1,2,3,0]},
+  'Am':{pcs:[9,0,4],  frets:[-1,0,2,2,1,0],   fingers:[0,0,2,3,1,0]},
+  'D' :{pcs:[2,6,9],  frets:[-1,-1,0,2,3,2],  fingers:[0,0,0,1,3,2]},
+  'Dm':{pcs:[2,5,9],  frets:[-1,-1,0,2,3,1],  fingers:[0,0,0,2,3,1]},
+  'G' :{pcs:[7,11,2], frets:[3,2,0,0,0,3],    fingers:[2,1,0,0,0,3]},
+  'C' :{pcs:[0,4,7],  frets:[-1,3,2,0,1,0],   fingers:[0,3,2,0,1,0]}};
+const GPOOL=Object.keys(GCHORDS);
+const GTPL={};GPOOL.forEach(n=>{const t=new Array(12).fill(0);GCHORDS[n].pcs.forEach(p=>t[p]=1);GTPL[n]=t;});
+const GSEQ=['E','Em','A','Am','D','Dm','G','C'];
 const NOTE=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const $=id=>document.getElementById(id);
 const CFG=(k,dv)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?dv:v;};
@@ -125,6 +161,8 @@ let freqBuf=null,timeBuf=null,ema=null;
 let lastOnset=0,envO=null,envPrev=0,slowEnv=null,onsetCount=0,strumT=null;
 const ONSETRISE=0.0009, ONSETMIN=0.0015;
 let state='idle';
+let inst='uke';                    // chord-test instrument toggle (defaults to uke)
+let runInst='uke',runSeq=TESTSEQ;  // locked in when a chord test starts
 // capture buffers
 let cap=null;            // chord-test accumulator
 let chordResults=[];     // [{name,n,avgCos,argmaxPct,avgNotes}]
@@ -150,6 +188,22 @@ function diagram(ch,hi){
     else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="11" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${fg}</text>`;}}
   return s+'</svg>';
 }
+
+function gdiagram(ch){
+  const W=190,H=190,ml=26,mr=26,top=34,bot=14,strings=6,nF=4;
+  const xs=(W-ml-mr)/(strings-1),ys=(H-top-bot)/nF;let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  s+=`<rect x="${ml}" y="${top-4}" width="${(strings-1)*xs}" height="5" rx="2" fill="#cfd4ff"/>`;
+  for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(strings-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>`;}
+  for(let i=0;i<strings;i++){const x=ml+i*xs;s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-bot}" stroke="rgba(255,255,255,.28)" stroke-width="1.5"/>`;}
+  const labels=['E','A','D','G','B','e'];
+  for(let i=0;i<strings;i++){const x=ml+i*xs,fr=ch.frets[i],fg=ch.fingers[i];
+    s+=`<text x="${x}" y="${H-1}" text-anchor="middle" font-size="9" fill="#9aa0c8">${labels[i]}</text>`;
+    if(fr===-1){s+=`<text x="${x}" y="${top-12}" text-anchor="middle" font-size="13" font-weight="800" fill="#ff5d73">\u00d7</text>`;}
+    else if(fr===0){s+=`<circle cx="${x}" cy="${top-16}" r="5.5" fill="none" stroke="#9aa0c8" stroke-width="1.6"/>`;}
+    else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="10" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${fg}</text>`;}}
+  return s+'</svg>';
+}
+const GHINT='<div style="font-size:11.5px;color:#9aa0c8;line-height:1.5;max-width:240px;margin:2px auto 0">Dots: press that fret with that finger (1 = index, 2 = middle, 3 = ring). O = play the string open. <span style="color:#ff5d73;font-weight:700">\u00d7</span> = don\u2019t strum that string. Press just behind the metal fret, strum once, let it ring.</div>';
 
 // monophonic NSDF pitch detector (same as the tuner) — used for the one-string check
 function pitchDetect(buf,rate){
@@ -211,7 +265,8 @@ function analyze(){
   analyser.getFloatFrequencyData(freqBuf);analyser.getFloatTimeDomainData(timeBuf);
   let rms=0;for(let i=0;i<timeBuf.length;i++)rms+=timeBuf[i]*timeBuf[i];rms=Math.sqrt(rms/timeBuf.length);
   const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);
-  for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
+  const fLo=(inst==='guitar')?75:120; // guitar needs the low E string (82 Hz); uke stays at 120
+  for(let k=1;k<bins;k++){const f=k*binHz;if(f<fLo||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
     const lin=Math.pow(10,db/20);const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;chroma[pc]+=lin;}
   if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
   // combined onset: sharp envelope RISE or a relative JUMP above a lagging baseline (level-independent)
@@ -232,7 +287,8 @@ function loop(){
   // meters
   $('lvl').textContent=a.rms.toFixed(3);$('lvlbar').style.width=Math.min(100,a.rms*400)+'%';if(a.rms>0.02)sawSignal=true;
   cbars.forEach((b,i)=>{b.style.height=Math.max(2,a.chroma[i]/maxc*52)+'px';b.classList.toggle('lit',a.chroma[i]>0.45*maxc);});
-  let best='—',bestS=0;for(const n of POOL){const s=cosine(a.chroma,TPL[n]);if(s>bestS){bestS=s;best=n;}}
+  const aPool=(inst==='guitar')?GPOOL:POOL, aTpl=(inst==='guitar')?GTPL:TPL;
+  let best='—',bestS=0;for(const n of aPool){const s=cosine(a.chroma,aTpl[n]);if(s>bestS){bestS=s;best=n;}}
   $('best').textContent=a.rms<0.01?'—':best;$('bestpct').textContent=a.rms<0.01?'':Math.round(bestS*100)+'%';
   if(state==='live'){ if(!sawSignal && performance.now()-noAudioT>2500){ $('prompt').innerHTML='<b style="color:var(--warn)">No sound reaching the app.</b> Tap <b>Stop mic</b> then <b>Start mic</b>; close other Pluck tabs; check Settings → mic permission.'; } else if(sawSignal && $('prompt').innerHTML.indexOf('No sound')>=0){ $('prompt').textContent=''; } }
   if(a.onset){$('odot').classList.add('on');clearTimeout(strumT);strumT=setTimeout(()=>$('odot').classList.remove('on'),130);}
@@ -241,21 +297,23 @@ function loop(){
 
   // chord test state machine
   if(state==='chordtest'){
-    if(TESTSEQ[testIdx]!==lastDiagChord){lastDiagChord=TESTSEQ[testIdx];$('chorddiagram').innerHTML=diagram(CHORDS[TESTSEQ[testIdx]]);}
-    const tgt=TESTSEQ[testIdx];
+    if(runSeq[testIdx]!==lastDiagChord){lastDiagChord=runSeq[testIdx];$('chorddiagram').innerHTML=(runInst==='uke')?diagram(CHORDS[runSeq[testIdx]]):(gdiagram(GCHORDS[runSeq[testIdx]])+GHINT);}
+    const tgt=runSeq[testIdx];
     if(phase==='await'){
       $('prompt').textContent='Play & hold '+tgt+' — tap ● Capture';
     } else if(phase==='capturing'){
       $('prompt').textContent='● recording '+tgt+'… keep holding';
-      if(a.rms>0.008){const cs=cosine(a.chroma,TPL[tgt]);
-        const present=CHORDS[tgt].pcs.filter(pc=>a.chroma[pc]>0.25*maxc).length/CHORDS[tgt].pcs.length;
-        cap.n++;cap.cos+=cs;cap.arg+=(best===tgt?1:0);cap.notes+=present;}
+      if(a.rms>0.008){const rTpl=(runInst==='guitar')?GTPL:TPL, rCh=(runInst==='guitar')?GCHORDS:CHORDS;
+        const cs=cosine(a.chroma,rTpl[tgt]);
+        const present=rCh[tgt].pcs.filter(pc=>a.chroma[pc]>0.25*maxc).length/rCh[tgt].pcs.length;
+        cap.n++;cap.cos+=cs;cap.arg+=(best===tgt?1:0);cap.notes+=present;cap.conf[best]=(cap.conf[best]||0)+1;}
       if(performance.now()-phaseT>2500){
-        const r=cap.n>3?{name:tgt,n:cap.n,avgCos:cap.cos/cap.n,argmaxPct:Math.round(100*cap.arg/cap.n),avgNotes:cap.notes/cap.n}
-                       :{name:tgt,n:cap.n,avgCos:0,argmaxPct:0,avgNotes:0,nosig:true};
+        let win=null,wn=-1;for(const k in cap.conf){if(cap.conf[k]>wn){wn=cap.conf[k];win=k;}}
+        const r=cap.n>3?{name:tgt,n:cap.n,avgCos:cap.cos/cap.n,argmaxPct:Math.round(100*cap.arg/cap.n),avgNotes:cap.notes/cap.n,winner:win}
+                       :{name:tgt,n:cap.n,avgCos:0,argmaxPct:0,avgNotes:0,winner:null,nosig:true};
         chordResults.push(r);phase='review';
         $('prompt').textContent = r.nosig ? (tgt+': didn\'t hear it — tap ↻ Retry') : (tgt+': heard '+Math.round(r.avgCos*100)+'%  ('+r.argmaxPct+'% match)');
-        $('captureBtn').textContent = (testIdx>=TESTSEQ.length-1)?'Finish ✓':'Next →';
+        $('captureBtn').textContent = (testIdx>=runSeq.length-1)?'Finish ✓':'Next →';
         $('skipChordBtn').textContent='↻ Retry';
       }
     }
@@ -280,7 +338,7 @@ function loop(){
 }
 
 function setActive(which){['chordTest','strumTest','checkBtn'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('active',id===which);});}
-function startChordTest(){if(!running)return;setActive('chordTest');$('checkChips').style.display='none';$('csBtns').style.display='none';state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
+function startChordTest(){if(!running)return;setActive('chordTest');$('checkChips').style.display='none';$('csBtns').style.display='none';runInst=inst;runSeq=(inst==='guitar')?GSEQ:TESTSEQ;state='chordtest';testIdx=0;phase='await';lastDiagChord=null;chordResults=[];$('resultsCard').style.display='none';$('testBtns').style.display='flex';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
 function finishChordTest(){
   setActive('');state='live';$('prompt').textContent='Chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;$('testBtns').style.display='none';
   // recommend cosine threshold
@@ -299,6 +357,36 @@ function finishChordTest(){
   txt+='Recommended chord cosine threshold: '+rec+'\n';
   $('results').innerHTML=html;$('summary').value=($('summary').value? $('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
   try{localStorage.setItem('pluckRepChord',JSON.stringify({date:new Date().toLocaleString(),chords:chordResults.map(r=>({n:r.name,cos:r.nosig?null:+r.avgCos.toFixed(2),arg:r.argmaxPct,notes:Math.round(r.avgNotes*100),ok:!r.nosig&&r.argmaxPct>=70&&r.avgCos>=0.55,nosig:!!r.nosig}))}));}catch(e){}
+  renderReport();
+}
+
+function finishGuitarTest(){
+  setActive('');state='live';$('prompt').textContent='Guitar chord test done';$('chorddiagram').innerHTML='';lastDiagChord=null;$('testBtns').style.display='none';
+  const thr=CFG('pluckChordCos',0.5);
+  const total=chordResults.length;let correct=0;const confusions=[];
+  const rows=chordResults.map(r=>{
+    const ok=!r.nosig&&r.winner===r.name&&r.avgCos>=thr;   // pass = target was argmax AND cosine above saved threshold
+    if(ok)correct++;
+    if(!r.nosig&&r.winner&&r.winner!==r.name)confusions.push(r.name+'→'+r.winner);
+    return {r:r,ok:ok};
+  });
+  const root=n=>n.replace(/m$/,'');
+  const majmin=confusions.filter(c=>{const p=c.split('→');return root(p[0])===root(p[1]);});
+  let verdict;
+  if(correct>=Math.ceil(total*0.9)&&majmin.length===0)verdict='PASS — detection can be trusted for guitar lessons';
+  else if(correct>=Math.ceil(total*0.7)&&majmin.length===0)verdict='MARGINAL — guitar lessons should treat detection as advisory';
+  else verdict='FAIL — guitar lessons should treat detection as advisory';
+  const confTxt=confusions.length?confusions.join(', '):'none';
+  let html='<div class="lbl">Guitar chord discrimination</div><table><tr><th>chord</th><th>cosine</th><th>argmax</th><th></th></tr>';
+  let txt='GUITAR CHORD TEST (chroma floor 75 Hz · threshold '+thr+')\n';
+  rows.forEach(x=>{const r=x.r,ok=x.ok;
+    html+='<tr><td>'+r.name+'</td><td>'+(r.nosig?'no signal':r.avgCos.toFixed(2))+'</td><td>'+(r.nosig?'-':r.argmaxPct+'%')+'</td><td class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</td></tr>';
+    txt+='  '+r.name.padEnd(3)+' cos '+(r.nosig?'NO SIGNAL':r.avgCos.toFixed(2))+'  argmax '+(r.nosig?'-':r.argmaxPct+'%')+(r.winner&&r.winner!==r.name?'  heard '+r.winner:'')+(ok?'  OK':'  CHECK')+'\n';
+  });
+  html+='</table><div class="hint" style="margin-top:8px">Correct-accept: <b>'+correct+'/'+total+'</b> · Wrong-chord confusions: '+confTxt+'<br><b style="color:'+(verdict.indexOf('PASS')===0?'var(--good)':'var(--warn)')+'">'+verdict+'</b></div>';
+  txt+='Correct-accept: '+correct+'/'+total+' · Wrong-chord confusions: '+confTxt+'\n'+verdict+'\n';
+  $('results').innerHTML=html;$('summary').value=($('summary').value?$('summary').value+'\n':'')+txt;$('resultsCard').style.display='block';
+  try{localStorage.setItem('pluckRepGuitar',JSON.stringify({date:new Date().toLocaleString(),correct:correct,total:total,conf:confusions,verdict:verdict,chords:chordResults.map(r=>({n:r.name,cos:r.nosig?null:+r.avgCos.toFixed(2),arg:r.argmaxPct,win:r.winner,nosig:!!r.nosig}))}));}catch(e){}
   renderReport();
 }
 
@@ -323,9 +411,10 @@ function buildReport(){
   let t='PLUCK — DETECTION REPORT\n('+new Date().toLocaleString()+')\n';
   t+='\nMic signal seen this session: '+(sawSignal?'YES':'no — tap Start mic and play')+'\n';
   const cos=localStorage.getItem('pluckChordCos'),lat=localStorage.getItem('pluckLat');
-  t+='\nSaved settings (this phone):\n  chord threshold: '+(cos||'(default 0.5)')+'\n  strum floor:     '+(localStorage.getItem('pluckOnFloor')||'(default)')+'\n  strum ratio:     '+(localStorage.getItem('pluckOnRatio')||'(2.0)')+'\n  strum gap:       '+(localStorage.getItem('pluckOnRefract')||'(0.18)')+'s\n  latency:         '+(lat!=null&&lat!==''?Math.round(parseFloat(lat)*1000)+'ms':'(not set)')+'\n';
+  t+='\nSaved settings (this phone):\n  A4 reference:    '+(localStorage.getItem('pluckA4')||'440')+' Hz\n  chord threshold: '+(cos||'(default 0.5)')+'\n  strum floor:     '+(localStorage.getItem('pluckOnFloor')||'(default)')+'\n  strum ratio:     '+(localStorage.getItem('pluckOnRatio')||'(2.0)')+'\n  strum gap:       '+(localStorage.getItem('pluckOnRefract')||'(0.18)')+'s\n  latency:         '+(lat!=null&&lat!==''?Math.round(parseFloat(lat)*1000)+'ms':'(not set)')+'\n';
   try{const st=JSON.parse(localStorage.getItem('pluckRepStrum')||'null');if(st)t+='\nLast strum test ('+st.date+'):\n  detected '+st.n+' of ~10  ·  '+st.verdict+'\n';}catch(e){}
   try{const ct=JSON.parse(localStorage.getItem('pluckRepChord')||'null');if(ct){t+='\nLast chord test ('+ct.date+'):\n';ct.chords.forEach(c=>{t+='  '+String(c.n).padEnd(4)+(c.nosig?' no signal':(' cos '+c.cos+'  argmax '+c.arg+'%  notes '+c.notes+'%'))+(c.ok?'  OK':'  CHECK')+'\n';});const f=ct.chords.filter(c=>!c.ok).map(c=>c.n);t+='  needs work: '+(f.length?f.join(', '):'none ✓')+'\n';}}catch(e){}
+  try{const g=JSON.parse(localStorage.getItem('pluckRepGuitar')||'null');if(g){t+='\nLast GUITAR chord test ('+g.date+'):\n';g.chords.forEach(c=>{t+='  '+String(c.n).padEnd(3)+(c.nosig?' no signal':(' cos '+c.cos+'  argmax '+c.arg+'%'+(c.win&&c.win!==c.n?'  heard '+c.win:'')))+'\n';});t+='  correct-accept: '+g.correct+'/'+g.total+' · confusions: '+(g.conf&&g.conf.length?g.conf.join(', '):'none')+'\n  '+g.verdict+'\n';}}catch(e){}
   try{const ch=JSON.parse(localStorage.getItem('pluckRepCheck')||'null');if(ch){t+='\nLast string check ('+ch.date+') — '+ch.chord+':\n';['g','C','E','A'].forEach((L,i)=>{t+='  '+L+': '+(ch.rang[i]?'rings':'MUTED')+'\n';});}}catch(e){}
   if(!localStorage.getItem('pluckRepStrum')&&!localStorage.getItem('pluckRepChord')&&!localStorage.getItem('pluckRepCheck'))t+='\nNo tests run yet — tap Test chords, Test strums, or Check chord.\n';
   return t;
@@ -342,13 +431,13 @@ function save(){
 
 $('captureBtn').addEventListener('click',()=>{
   if(state!=='chordtest')return;
-  if(phase==='await'){phase='capturing';cap={n:0,cos:0,arg:0,notes:0};phaseT=performance.now();$('captureBtn').textContent='● Recording…';}
-  else if(phase==='review'){testIdx++;if(testIdx>=TESTSEQ.length){finishChordTest();return;}phase='await';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
+  if(phase==='await'){phase='capturing';cap={n:0,cos:0,arg:0,notes:0,conf:{}};phaseT=performance.now();$('captureBtn').textContent='● Recording…';}
+  else if(phase==='review'){testIdx++;if(testIdx>=runSeq.length){if(runInst==='guitar')finishGuitarTest();else finishChordTest();return;}phase='await';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
 });
 $('skipChordBtn').addEventListener('click',()=>{
   if(state!=='chordtest')return;
   if(phase==='review'){chordResults.pop();phase='await';$('captureBtn').textContent='● Capture';$('skipChordBtn').textContent='Skip';}
-  else if(phase==='await'){chordResults.push({name:TESTSEQ[testIdx],n:0,avgCos:0,argmaxPct:0,avgNotes:0,nosig:true});testIdx++;if(testIdx>=TESTSEQ.length){finishChordTest();return;}phase='await';$('captureBtn').textContent='● Capture';}
+  else if(phase==='await'){chordResults.push({name:runSeq[testIdx],n:0,avgCos:0,argmaxPct:0,avgNotes:0,winner:null,nosig:true});testIdx++;if(testIdx>=runSeq.length){if(runInst==='guitar')finishGuitarTest();else finishChordTest();return;}phase='await';$('captureBtn').textContent='● Capture';}
 });
 $('micBtn').addEventListener('click',toggleMic);
 $('chordTest').addEventListener('click',startChordTest);
@@ -360,7 +449,25 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 $('copyReport').addEventListener('click',()=>{const t=buildReport();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}).catch(()=>{$('report').focus();$('report').select();});}else{$('report').focus();$('report').select();try{document.execCommand('copy');}catch(e){}$('copyReport').textContent='Copied ✓';setTimeout(()=>$('copyReport').textContent='Copy report',1500);}});
 renderReport();
 $('copyBtn').addEventListener('click',()=>{$('summary').focus();$('summary').select();});
+// instrument toggle (chord test only) — locked while a test is running
+function setInst(v){if(state==='chordtest')return;inst=v;$('instUke').classList.toggle('active',v==='uke');$('instGtr').classList.toggle('active',v==='guitar');}
+$('instUke').addEventListener('click',()=>setInst('uke'));
+$('instGtr').addEventListener('click',()=>setInst('guitar'));
+
+// A4 reference calibration + last-seen mic settings
+(function(){
+  const r=$('a4range'),lb=$('a4lbl');
+  function saved(){const v=parseInt(localStorage.getItem('pluckA4'),10);return(v>=415&&v<=445)?v:440;}
+  function show(v){r.value=v;lb.textContent='A4 = '+v+' Hz';}
+  show(saved());
+  r.addEventListener('input',()=>{const v=Math.max(415,Math.min(445,parseInt(r.value,10)||440));lb.textContent='A4 = '+v+' Hz';try{localStorage.setItem('pluckA4',String(v));}catch(e){}renderReport();});
+  $('a4reset').addEventListener('click',()=>{show(440);try{localStorage.setItem('pluckA4','440');}catch(e){}renderReport();});
+  let ms='(not recorded yet — open the tuner once with the mic on)';
+  try{const j=JSON.parse(localStorage.getItem('pluckMicSettings')||'null');if(j&&typeof j==='object')ms=JSON.stringify(j,null,2);}catch(e){ms='(saved value could not be read)';}
+  $('micset').textContent=ms;
+})();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 </script>
+<nav class="tabbar"><a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg><span>Tuner</span></a><a href="lessons.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lessons</span></a><a href="song-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg><span>Songs</span></a><a href="practice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Practice</span></a><a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg><span>Profile</span></a></nav>
 </body>
 </html>

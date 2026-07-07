@@ -25,7 +25,7 @@
     background:var(--bg);color:var(--txt);overflow:hidden;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;
-    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 14px);
+    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 72px);
     -webkit-user-select:none;user-select:none;
   }
   /* animated aurora background */
@@ -65,6 +65,7 @@
   .strings button .lbl{line-height:1}
   .strings button .oct{font-size:9px;opacity:.5;font-weight:700}
   .strings button.target{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 6px 18px rgba(124,108,255,.4);transform:translateY(-2px)}
+  .strings button.pinned{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn),0 6px 18px rgba(255,194,61,.4);transform:translateY(-2px)}
   .strings button.tuned{border-color:var(--good);background:rgba(39,224,160,.14);color:var(--good)}
   .strings button.tuned::after{content:"✓";position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
     background:var(--good);color:#04211a;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(39,224,160,.6)}
@@ -78,6 +79,11 @@
   .flash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(39,224,160,.5),transparent 60%)}
   .flash.go{animation:flash .7s ease-out}
   @keyframes flash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+  #micLost{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;background:rgba(8,6,15,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #micLost.on{display:flex}
+  #micLost .card{background:rgba(20,16,38,.96);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:20px 28px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.6);max-width:300px;cursor:pointer}
+  #micLost .card b{display:block;font-size:17px;margin-bottom:4px}
+  #micLost .card span{color:var(--muted);font-size:13px;font-weight:600}
   .done{display:flex;align-items:center;gap:6px;color:var(--good);font-weight:800}
   #rick{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;overflow:hidden;cursor:pointer;background:linear-gradient(180deg,#1a0633 0%,#3a0d5c 45%,#ff2e88 130%)}
   #rick.on{display:flex;animation:rkin .3s ease-out}
@@ -102,11 +108,16 @@
   .chip svg{width:14px;height:14px}
   .chip.go{background:rgba(39,224,160,.12);border-color:rgba(39,224,160,.35);color:var(--good)}
   .chip.dim{color:var(--muted)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;align-items:center;padding:6px 10px calc(env(safe-area-inset-bottom) + 6px);background:rgba(10,8,20,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:10px;font-weight:700;letter-spacing:.3px;min-width:56px;padding:4px 0}
+.tabbar a svg{width:20px;height:20px}
+.tabbar a.on{color:#9d8bff}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="flash" id="flash"></div>
+<div id="micLost"><div class="card"><b>Mic paused</b><span>tap to resume</span></div></div>
 
 <div class="wrap">
   <div class="top">
@@ -132,7 +143,7 @@
 
   <button class="mic" id="micBtn">Start Tuning</button>
   <div class="hint" id="hint">Tap a string to hear its note · or start the mic and play. Hold it steady in the green — it locks when you nail it.</div>
-  <div class="navrow"><a class="chip go" href="lessons.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Lessons</a><a class="chip" href="chord-coach.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg> Chord Coach</a><a class="chip" href="song-mode.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg> Songs</a><a class="chip" href="song-sheet.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg> Sheets</a><a class="chip dim" href="diag.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Diagnostics</a></div>
+  <div class="navrow"><a class="chip" href="chord-coach.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg> Chord Coach</a><a class="chip" href="song-sheet.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg> Sheets</a><a class="chip dim" href="diag.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Diagnostics</a></div>
 </div>
 
 <script>
@@ -140,8 +151,10 @@ const TUNINGS={
   guitar:[{n:'E',o:2,f:82.41},{n:'A',o:2,f:110.00},{n:'D',o:3,f:146.83},{n:'G',o:3,f:196.00},{n:'B',o:3,f:246.94},{n:'E',o:4,f:329.63}],
   ukulele:[{n:'G',o:4,f:392.00},{n:'C',o:4,f:261.63},{n:'E',o:4,f:329.63},{n:'A',o:4,f:440.00}]
 };
+const A4REF=Math.min(445,Math.max(415,parseFloat(localStorage.getItem('pluckA4'))||440));
+for(const k in TUNINGS)TUNINGS[k]=TUNINGS[k].map(s=>({...s,f:s.f*(A4REF/440)}));
 const $=id=>document.getElementById(id);
-let inst='guitar', audioCtx=null, analyser=null, micStream=null, running=false, rafId=null;
+let inst=(localStorage.getItem('pluckInst')==='ukulele')?'ukulele':'guitar', audioCtx=null, analyser=null, micStream=null, running=false, rafId=null;
 let tuned={}; // key -> true
 let wakeLock=null, watchTimer=null;
 
@@ -154,7 +167,14 @@ function buildStrings(){
     b.dataset.i=i;
     b.innerHTML=`<span class="lbl">${s.n}</span><span class="oct">${s.o}</span>`;
     if(tuned[key(s)])b.classList.add('tuned');
-    b.onclick=()=>playTone(s.f);
+    if(pinnedIdx===i)b.classList.add('pinned');
+    let pressT=null,longPressed=false;
+    b.addEventListener('pointerdown',()=>{
+      longPressed=false;clearTimeout(pressT);
+      pressT=setTimeout(()=>{longPressed=true;setPin(pinnedIdx===i?-1:i);},500);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(pressT)));
+    b.addEventListener('click',()=>{ if(longPressed){longPressed=false;return;} playTone(s.f); });
     w.appendChild(b);
   });
 }
@@ -166,13 +186,23 @@ function markTuned(s){
   const i=TUNINGS[inst].indexOf(s);
   if($('strings').children[i])$('strings').children[i].classList.add('tuned');
 }
+function setPin(i){                     // i=-1 unpins
+  pinnedIdx=i;switchCand=null;
+  [...$('strings').children].forEach((c,j)=>c.classList.toggle('pinned',j===i));
+  if(i>=0){lastDetectionAt=performance.now();if(navigator.vibrate)navigator.vibrate(12);}
+}
 
 /* ---------- audio: reference tone ---------- */
 function ensureCtx(){
   if(!audioCtx){
     audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     // iOS suspends the context on lock / interruption — auto-resume while we're meant to be running
-    audioCtx.onstatechange=()=>{ if(running && audioCtx.state!=='running') audioCtx.resume().catch(()=>{}); };
+    audioCtx.onstatechange=()=>{
+      if(running && audioCtx.state!=='running'){
+        audioCtx.resume().catch(()=>{});
+        setTimeout(()=>{ if(running && audioCtx.state!=='running') showMicLost(); },1000);
+      }else if(audioCtx.state==='running'){ hideMicLost(); }
+    };
   }
   return audioCtx;
 }
@@ -192,9 +222,23 @@ async function connectMic(){
   micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,autoGainControl:false,noiseSuppression:false}});
   const src=audioCtx.createMediaStreamSource(micStream);
   analyser=audioCtx.createAnalyser(); analyser.fftSize=4096; src.connect(analyser);
-  micStream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(running) connectMic().catch(()=>{}); }; });
+  micStream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(running) reconnectMic(); }; });
+  try{const tr=micStream.getAudioTracks()[0];if(tr)localStorage.setItem('pluckMicSettings',JSON.stringify(tr.getSettings()));}catch(e){}
+  hideMicLost();
 }
-function watchdog(){ if(!running) return; resumeAudio(); keepAwake(); }
+let micReconnecting=false;
+function reconnectMic(){
+  if(micReconnecting)return;
+  micReconnecting=true;
+  connectMic().catch(()=>{ showMicLost(); }).finally(()=>{ micReconnecting=false; });
+}
+function watchdog(){
+  if(!running) return; resumeAudio(); keepAwake();
+  if(audioCtx&&audioCtx.state!=='running'){
+    setTimeout(()=>{ if(running&&audioCtx&&audioCtx.state!=='running') showMicLost(); },1000);
+  }
+  if(micStream&&!micStream.getAudioTracks().some(t=>t.readyState==='live')) reconnectMic();
+}
 function playTone(freq){
   const ctx=ensureCtx(); if(ctx.state==='suspended')ctx.resume();
   const o=ctx.createOscillator(),g=ctx.createGain();
@@ -244,7 +288,9 @@ function stopMic(){
   if(micStream)micStream.getTracks().forEach(t=>t.stop());
   $('micBtn').textContent='Start Tuning';$('micBtn').classList.remove('live');
   $('note').textContent='';$('note').style.color='';$('cents').textContent='';
-  $('state').textContent='tap a string ▾';markTarget(-1);
+  $('state').textContent='tap a string ▾';markTarget(-1);hideMicLost();
+  lockHold=0;lockProg=0;locked=false;stabWin.length=0;prevTargetKey='';history.length=0;
+  switchCand=null;lastClarity=0;lastCol=null;
   render(0,0,false,0,null);
 }
 
@@ -254,6 +300,12 @@ let smoothCents=0;        // eased needle value
 let target=null, lockHold=0, lockProg=0, locked=false, lastT=performance.now();
 let particles=[];
 let graceUntil=0;
+let prevTargetKey='';                    // lock state resets when this changes
+let stabWin=[];                          // {t,c} readings vs current target, last 450ms
+let switchCand=null, switchSince=0;      // sticky-target auto-switch tracking
+let pinnedIdx=-1;                        // long-press pinned string (-1 = none)
+let lastDetectRun=0, lastDetectionAt=0;  // 30ms detection throttle + silence clock
+let lastClarity=0, lastCol=null;         // cached for throttled render frames
 
 function detect(b,rate){
   const n=b.length;
@@ -286,7 +338,17 @@ function detect(b,rate){
   const sh=(a-cc)/(2*(a-2*bb+cc));
   const period=pt+(isFinite(sh)?sh:0);
   const f=rate/period;
-  return (f>60&&f<1300)?{f,clarity:pv}:null;
+  // polyphony flag: a strong secondary peak whose lag ratio to the winner is
+  // >6% away from every integer 1..4 is not a harmonic -> two notes sounding
+  let poly=false;
+  for(const p of peaks){
+    if(p[0]===pt||p[1]<0.8*maxPeak)continue;
+    const r=p[0]>pt?p[0]/pt:pt/p[0];
+    let harmonic=false;
+    for(let m=1;m<=4;m++){if(Math.abs(r-m)/m<=0.06){harmonic=true;break;}}
+    if(!harmonic){poly=true;break;}
+  }
+  return (f>60&&f<1300)?{f,clarity:pv,poly}:null;
 }
 function median(arr){const s=[...arr].sort((x,y)=>x-y);return s[Math.floor(s.length/2)];}
 
@@ -301,52 +363,113 @@ function nearestString(f){
 
 function loop(){
   const now=performance.now();let dt=(now-lastT)/1000;lastT=now;if(dt>0.1)dt=0.1;
-  analyser.getFloatTimeDomainData(buf);
-  const res=detect(buf,audioCtx.sampleRate);
 
-  if(res){
-    history.push(res.f);if(history.length>8)history.shift();
-    const f=median(history);
-    const {s,cents}=nearestString(f);
-    target=s;markTarget(TUNINGS[inst].indexOf(s));
-    smoothCents+=(cents-smoothCents)*0.25;
-    graceUntil=now+550;                            // hold this reading briefly if sound drops
-
-    // lock logic with hysteresis
-    const a=Math.abs(cents);
-    if(a<=8){lockHold+=dt*1.4;}
-    else if(a<=18&&locked){/* stay locked */}
-    else if(a<=15){/* hold credit */}
-    else {lockHold=Math.max(0,lockHold-dt*0.8);if(a>30)locked=false;}
-    lockProg=Math.min(1,lockHold/0.4);
-    if(lockProg>=1&&!locked){locked=true;celebrate(s);}
-    if(locked&&a>22)locked=false;
-
-    $('note').innerHTML=`${s.n}<small>${s.o}</small>`;
-    $('cents').textContent=(cents>=0?'+':'')+Math.round(cents)+'¢';
-    let col;
-    if(locked||a<=8){col=getCss('--good');$('state').innerHTML=locked?'<span class="done">LOCKED ✓</span>':'in tune';}
-    else if(a<=25){col=getCss('--warn');$('state').textContent=cents>0?'a touch sharp':'a touch flat';}
-    else{col=getCss('--bad');$('state').textContent=cents>0?'too sharp · loosen':'too flat · tighten';}
-    $('note').style.color=col;
-    const nm=s.n+s.o;
-    if(locked||a<=8){$('bigstatus').innerHTML='<b>'+nm+'</b> — IN TUNE ✓';$('bigstatus').style.color=getCss('--good');}
-    else if(cents<0){$('bigstatus').innerHTML='Hearing <b>'+nm+'</b> — TIGHTEN ▲';$('bigstatus').style.color=getCss(a<=25?'--warn':'--bad');}
-    else{$('bigstatus').innerHTML='Hearing <b>'+nm+'</b> — LOOSEN ▼';$('bigstatus').style.color=getCss(a<=25?'--warn':'--bad');}
-    render(smoothCents,res.clarity,locked,lockProg,col);
-  }else if(now<graceUntil){
-    // momentary dropout — keep the display steady so it doesn't flicker
-    lockHold=Math.max(0,lockHold-dt*0.4);lockProg=Math.min(1,lockHold/0.4);
-    render(smoothCents,0,locked,lockProg,$('note').style.color||null);
+  // detection is time-gated to every 30ms so 120Hz displays don't double the DSP work
+  if(now-lastDetectRun>=30){
+    let ddt=(now-lastDetectRun)/1000;if(ddt>0.1)ddt=0.1;
+    lastDetectRun=now;
+    analyser.getFloatTimeDomainData(buf);
+    const res=detect(buf,audioCtx.sampleRate);
+    if(res)lastDetectionAt=now;
+    tick(res,now,ddt);
   }else{
-    history.length=0;lockHold=Math.max(0,lockHold-dt*1.2);lockProg=Math.min(1,lockHold/0.4);
-    smoothCents*=0.9;
-    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='';$('note').style.color='';$('cents').textContent='';$('bigstatus').textContent='play a string ♪';$('bigstatus').style.color=getCss('--muted');}
-    render(smoothCents,0,locked,lockProg,null);
+    // throttled frame: keep the needle animating from cached state
+    render(smoothCents,lastClarity,locked,lockProg,lastCol);
   }
   stepParticles(dt);
   rafId=requestAnimationFrame(loop);
 }
+
+function tick(res,now,dt){
+  if(res){
+    history.push(res.f);if(history.length>8)history.shift();
+    const f=median(history);
+
+    // ---- target selection: pinned > sticky current > nearest ----
+    const cand=nearestString(f);
+    let s;
+    if(pinnedIdx>=0&&TUNINGS[inst][pinnedIdx]){
+      s=TUNINGS[inst][pinnedIdx];switchCand=null;      // manual pin: never auto-switch
+    }else if(target&&TUNINGS[inst].indexOf(target)>=0&&cand.s!==target){
+      // only switch if the candidate is >100 cents closer, continuously for >0.75s
+      const curAbs=Math.abs(1200*Math.log2(f/target.f));
+      if(Math.abs(cand.cents)<curAbs-100){
+        if(switchCand!==cand.s){switchCand=cand.s;switchSince=now;}
+        s=(now-switchSince>750)?cand.s:target;
+      }else{switchCand=null;s=target;}
+    }else{switchCand=null;s=cand.s;}
+    target=s;
+    const cents=1200*Math.log2(f/s.f);
+    markTarget(TUNINGS[inst].indexOf(s));
+
+    // ---- reset lock state on target change (kills strum lock carryover) ----
+    const tk=key(s);
+    if(tk!==prevTargetKey){
+      prevTargetKey=tk;lockHold=0;locked=false;stabWin.length=0;smoothCents=cents;
+    }
+
+    // ---- stability window: readings vs this target over the last 450ms ----
+    stabWin.push({t:now,c:cents});
+    while(stabWin.length&&now-stabWin[0].t>450)stabWin.shift();
+    let mn=Infinity,mx=-Infinity;for(const e of stabWin){if(e.c<mn)mn=e.c;if(e.c>mx)mx=e.c;}
+    const span=now-stabWin[0].t;
+    const spreadOk=(mx-mn)<=12;
+    const winStable=span>=350&&spreadOk&&!res.poly;
+
+    // ---- adaptive needle damping: calm near pitch, responsive far away ----
+    const ad=Math.abs(cents);
+    const alpha=ad<=10?0.12:(ad>=25?0.35:0.12+((ad-10)/15)*0.23);
+    smoothCents+=(cents-smoothCents)*alpha;
+    graceUntil=now+550;                            // hold this reading briefly if sound drops
+
+    // ---- lock logic: credit needs a clean, steady, monophonic reading;
+    //      the lock itself only fires once the window is stable for 350ms ----
+    const a=Math.abs(cents);
+    if(a<=8&&spreadOk&&!res.poly){lockHold+=dt*1.4;}
+    else if(a<=18&&locked){/* stay locked */}
+    else if(a<=15){/* hold credit */}
+    else {lockHold=Math.max(0,lockHold-dt*0.8);if(a>30)locked=false;}
+    lockProg=Math.min(1,lockHold/0.4);
+    if(lockProg>=1&&winStable&&a<=8&&!locked){locked=true;celebrate(s);}
+    if(locked&&a>22)locked=false;
+
+    // ---- tick hygiene: a genuinely stable out-of-tune reading clears the checkmark ----
+    if(winStable&&a>15&&tuned[tk]){
+      delete tuned[tk];
+      const bi=TUNINGS[inst].indexOf(s);
+      if($('strings').children[bi])$('strings').children[bi].classList.remove('tuned');
+    }
+
+    // ---- readout: cents text, state line and bigstatus all read smoothCents ----
+    const sc=smoothCents,sa=Math.abs(sc);
+    $('note').innerHTML=`${s.n}<small>${s.o}</small>`;
+    $('cents').textContent=(sc>=0?'+':'')+Math.round(sc)+'¢';
+    let col;
+    if(locked||sa<=8){col=getCss('--good');$('state').innerHTML=locked?'<span class="done">LOCKED ✓</span>':'in tune';}
+    else if(sa<=25){col=getCss('--warn');$('state').textContent=sc>0?'a touch sharp':'a touch flat';}
+    else{col=getCss('--bad');$('state').textContent=sc>0?'too sharp · loosen':'too flat · tighten';}
+    $('note').style.color=col;
+    const nm=s.n+s.o;
+    if(locked||sa<=8){$('bigstatus').innerHTML='<b>'+nm+'</b> — IN TUNE ✓';$('bigstatus').style.color=getCss('--good');}
+    else if(sc<0){$('bigstatus').innerHTML='Hearing <b>'+nm+'</b> — TIGHTEN ▲';$('bigstatus').style.color=getCss(sa<=25?'--warn':'--bad');}
+    else{$('bigstatus').innerHTML='Hearing <b>'+nm+'</b> — LOOSEN ▼';$('bigstatus').style.color=getCss(sa<=25?'--warn':'--bad');}
+    lastClarity=res.clarity;lastCol=col;
+    render(smoothCents,res.clarity,locked,lockProg,col);
+  }else if(now<graceUntil){
+    // momentary dropout — keep the display steady so it doesn't flicker
+    lockHold=Math.max(0,lockHold-dt*0.4);lockProg=Math.min(1,lockHold/0.4);
+    lastClarity=0;lastCol=$('note').style.color||null;
+    render(smoothCents,0,locked,lockProg,lastCol);
+  }else{
+    history.length=0;lockHold=Math.max(0,lockHold-dt*1.2);lockProg=Math.min(1,lockHold/0.4);
+    smoothCents*=0.9;stabWin.length=0;
+    if(pinnedIdx>=0&&lastDetectionAt&&now-lastDetectionAt>10000)setPin(-1);   // 10s of silence unpins
+    if(!locked){$('state').textContent='listening…';markTarget(-1);$('note').textContent='';$('note').style.color='';$('cents').textContent='';$('bigstatus').textContent='play a string ♪';$('bigstatus').style.color=getCss('--muted');}
+    lastClarity=0;lastCol=null;
+    render(smoothCents,0,locked,lockProg,null);
+  }
+}
+
 const _cssCache={};function getCss(v){let c=_cssCache[v];if(c===undefined){c=getComputedStyle(document.documentElement).getPropertyValue(v).trim();_cssCache[v]=c;}return c;}
 
 function celebrate(s){
@@ -446,11 +569,24 @@ function drawParticles(){
 /* ---------- wiring ---------- */
 $('instrument').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  inst=b.dataset.inst;tuned={};
+  inst=b.dataset.inst;try{localStorage.setItem('pluckInst',inst);}catch(e){}tuned={};
+  target=null;prevTargetKey='';lockHold=0;lockProg=0;locked=false;
+  stabWin.length=0;switchCand=null;pinnedIdx=-1;history.length=0;
   [...$('instrument').children].forEach(c=>c.classList.toggle('on',c===b));
   buildStrings();
 });
+[...$('instrument').children].forEach(c=>c.classList.toggle('on',c.dataset.inst===inst));
 $('micBtn').addEventListener('click',toggleMic);
+function showMicLost(){$('micLost').classList.add('on');}
+function hideMicLost(){$('micLost').classList.remove('on');}
+$('micLost').addEventListener('click',async()=>{
+  try{
+    const ctx=ensureCtx(); if(ctx.state!=='running')await ctx.resume();
+    const live=micStream&&micStream.getAudioTracks().some(t=>t.readyState==='live');
+    if(!live)await connectMic();
+    if(audioCtx.state==='running')hideMicLost();
+  }catch(e){/* keep the overlay up — resume genuinely failed */}
+});
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&running){ resumeAudio(); keepAwake(); } });
 
 sizeCanvas();buildStrings();render(0,0,false,0,null);
@@ -477,5 +613,6 @@ if('serviceWorker' in navigator){
   <div class="rk-close">tap anywhere to close</div>
   <div id="rkcatch"></div>
 </div>
+<nav class="tabbar"><a href="index.html" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg><span>Tuner</span></a><a href="lessons.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lessons</span></a><a href="song-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg><span>Songs</span></a><a href="practice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Practice</span></a><a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg><span>Profile</span></a></nav>
 </body>
 </html>

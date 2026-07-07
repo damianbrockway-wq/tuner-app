@@ -16,7 +16,7 @@
   html,body{height:100%;margin:0}
   body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;min-height:100%;
-    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 16px);-webkit-user-select:none;user-select:none}
+    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 76px);-webkit-user-select:none;user-select:none}
   .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.45}
   .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
   .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}
@@ -50,13 +50,33 @@
 
   .ic{width:15px;height:15px;vertical-align:-2.5px}
   .brand svg{color:#9d8bff}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;align-items:center;padding:6px 10px calc(env(safe-area-inset-bottom) + 6px);background:rgba(10,8,20,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:10px;font-weight:700;letter-spacing:.3px;min-width:56px;padding:4px 0}
+.tabbar a svg{width:20px;height:20px}
+.tabbar a.on{color:#9d8bff}
+
+  .instnote{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-align:center;margin:-2px 0 2px}
+  .instnote b{color:var(--warn);font-weight:800;letter-spacing:.3px;text-transform:none}
+
+  .seg{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:3px;align-self:center}
+  .seg button{border:0;background:transparent;color:var(--muted);padding:7px 20px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;font-family:inherit}
+  .seg button.on{background:linear-gradient(90deg,#7c6cff,#5b8cff);color:#fff;box-shadow:0 4px 14px rgba(124,108,255,.45)}
+  .page{display:flex;flex-direction:column;gap:14px}
+  .newnote{font-size:12.5px;color:var(--muted);text-align:center}
 </style>
 </head>
 <body>
 <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 <div class="wrap">
   <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> <b>LESSONS</b></div><a href="profile.html" style="width:40px;display:flex;justify-content:flex-end;color:#ffc23d"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg></a></div>
+  <div class="instnote" id="instnote">UKULELE</div>
 
+  <div class="seg" id="courseTabs">
+    <button type="button" id="tabUke" class="on">Ukulele</button>
+    <button type="button" id="tabGtr">Guitar</button>
+  </div>
+
+  <div class="page" id="ukePage">
   <div class="summary">
     <div class="lbl">Your progress</div>
     <div class="big" id="prog">0 of 2 lessons</div>
@@ -77,11 +97,34 @@
     <div class="status go">Go →</div>
   </a>
   <div id="list"></div>
+  </div>
+
+  <div class="page" id="gtrPage" style="display:none">
+  <div class="summary">
+    <div class="lbl">Your progress</div>
+    <div class="big" id="gprog">0 of 10 lessons</div>
+    <div class="pbar"><i id="gpbar"></i></div>
+    <div class="lbl" style="margin-top:14px">Chords learned</div>
+    <div class="chips" id="gchords"></div>
+  </div>
+  <div class="newnote">The guitar course is new — 10 lessons now, the last five on the way.</div>
+
+  <div class="card soon">
+    <div class="num" style="background:linear-gradient(180deg,#27e0a0,#16b888)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></div>
+    <div class="meta"><div class="t">Smart Practice</div><div class="d">Uke only for now</div></div>
+  </div>
+  <div class="card soon">
+    <div class="num" style="background:linear-gradient(180deg,#ffc23d,#f0a500)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 0 4 0"/></svg></div>
+    <div class="meta"><div class="t">Ear &amp; Rhythm</div><div class="d">Uke only for now</div></div>
+  </div>
+  <div id="glist"></div>
+  </div>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
 const done=n=>{try{return localStorage.getItem('pluckLesson'+n)==='done';}catch(e){return false;}};
+const gdone=n=>{try{return localStorage.getItem('pluckGLesson'+n)==='done';}catch(e){return false;}};
 const LESSONS=[
   {n:1, t:'Play your first song', d:'Tune up, learn C and Am, play a 2-chord song', chords:['C','Am']},
   {n:2, t:'The F chord & strumming', d:'Learn F, the C↔F change, and strum in time', chords:['F']},
@@ -99,6 +142,25 @@ const LESSONS=[
   {n:14, t:'More to come', d:'Coming soon', chords:[], soon:true}
 ];
 
+const GLESSONS=[
+  {n:1, t:'First sounds', d:'Tune up, hold the pick, and get your strumming arm going', chords:[]},
+  {n:2, t:'Em and Am — your first chords', d:'Two shapes, two fingers each, and your first change', chords:['Em','Am']},
+  {n:3, t:'D — and which strings you strum', d:'The three-finger triangle, and the strings you skip', chords:['D']},
+  {n:4, t:'A and E — the power pair', d:'Two more shapes and your first three-chord jam', chords:['A','E']},
+  {n:5, t:'Making it music', d:'No new chords: counting, down-ups, and playing in time', chords:[]},
+  {n:6, t:'G — the big open chord', d:'A six-string stretch that opens hundreds of songs', chords:['G']},
+  {n:7, t:'C — completing the family', d:'The four-chord loop that powers pop', chords:['C']},
+  {n:8, t:'Dm and your first strumming pattern', d:'D · DU · UDU', chords:['Dm']},
+  {n:9, t:'The friendly F', d:'Fmaj7 and the mini-F: no barre required', chords:['Fmaj7','F']},
+  {n:10, t:'7th chords and the blues', d:'A7, D7, E7 and an eight-bar blues', chords:['A7','D7','E7']},
+  {n:11, t:'Power chords', d:'Two fingers, big sound', chords:[], soon:true},
+  {n:12, t:'Fingerpicking', d:'One string at a time', chords:[], soon:true},
+  {n:13, t:'The F barre journey', d:'The full barre, step by step', chords:[], soon:true},
+  {n:14, t:'Sus chords', d:'Colour and movement', chords:[], soon:true},
+  {n:15, t:'Capstone', d:'Play a full song', chords:[], soon:true}
+];
+
+function renderUke(){
 const total=LESSONS.filter(l=>!l.soon).length;
 const completed=LESSONS.filter(l=>!l.soon && done(l.n)).length;
 $('prog').textContent=completed+' of '+total+' lessons';
@@ -107,11 +169,11 @@ $('pbar').style.width=Math.round(completed/total*100)+'%';
 // chords learned = from completed lessons
 let learned=[];LESSONS.forEach(l=>{if(!l.soon && done(l.n))learned=learned.concat(l.chords);});
 learned=[...new Set(learned)];
-const cc=$('chords');
+const cc=$('chords');cc.innerHTML='';
 if(learned.length)learned.forEach(c=>{const s=document.createElement('span');s.textContent=c;cc.appendChild(s);});
 else{const s=document.createElement('span');s.className='none';s.textContent='none yet — start Lesson 1';cc.appendChild(s);}
 
-const list=$('list');
+const list=$('list');list.innerHTML='';
 LESSONS.forEach((l,i)=>{
   const isDone=!l.soon && done(l.n);
   const prevDone=l.n===1 || done(l.n-1);
@@ -123,8 +185,58 @@ LESSONS.forEach((l,i)=>{
     '<div class="status '+(isDone?'ok':'go')+'">'+(l.soon?'soon':(isDone?'✓ Done':(prevDone?'Start →':'Start →')))+'</div>';
   list.appendChild(el);
 });
+}
+
+function renderGuitar(){
+const total=GLESSONS.filter(l=>!l.soon).length;
+const completed=GLESSONS.filter(l=>!l.soon && gdone(l.n)).length;
+$('gprog').textContent=completed+' of '+total+' lessons';
+$('gpbar').style.width=Math.round(completed/total*100)+'%';
+
+let learned=[];GLESSONS.forEach(l=>{if(!l.soon && gdone(l.n))learned=learned.concat(l.chords);});
+learned=[...new Set(learned)];
+const cc=$('gchords');cc.innerHTML='';
+if(learned.length)learned.forEach(c=>{const s=document.createElement('span');s.textContent=c;cc.appendChild(s);});
+else{const s=document.createElement('span');s.className='none';s.textContent='none yet — start Lesson 1';cc.appendChild(s);}
+
+const list=$('glist');list.innerHTML='';
+GLESSONS.forEach(l=>{
+  const isDone=!l.soon && gdone(l.n);
+  const prevDone=l.n===1 || gdone(l.n-1);
+  const el=document.createElement(l.soon?'div':'a');
+  if(!l.soon)el.href='lesson.html?i=g&l='+l.n;
+  el.className='card'+(isDone?' done':'')+(l.soon?' soon':'')+(!l.soon&&!prevDone&&!isDone?' locked':'');
+  el.innerHTML='<div class="num">'+(isDone?'✓':l.n)+'</div>'+
+    '<div class="meta"><div class="t">Lesson '+l.n+' · '+l.t+'</div><div class="d">'+l.d+'</div></div>'+
+    '<div class="status '+(isDone?'ok':'go')+'">'+(l.soon?'soon':(isDone?'✓ Done':'Start →'))+'</div>';
+  list.appendChild(el);
+});
+}
+
+function setInstnote(tab){
+  var _in=$('instnote');if(!_in)return;
+  if(tab==='guitar'){_in.textContent='GUITAR';return;}
+  if(localStorage.getItem('pluckInst')==='guitar'){_in.innerHTML='UKULELE · <b>you’re in guitar mode — these lessons and songs are ukulele-only for now</b>';}
+  else{_in.textContent='UKULELE';}
+}
+
+function showTab(tab){
+  $('tabUke').classList.toggle('on',tab!=='guitar');
+  $('tabGtr').classList.toggle('on',tab==='guitar');
+  $('ukePage').style.display=tab==='guitar'?'none':'flex';
+  $('gtrPage').style.display=tab==='guitar'?'flex':'none';
+  setInstnote(tab);
+  if(tab==='guitar')renderGuitar();else renderUke();
+}
+$('tabUke').addEventListener('click',()=>showTab('uke'));
+$('tabGtr').addEventListener('click',()=>showTab('guitar'));
+
+let startTab='uke';
+try{if(localStorage.getItem('pluckInst')==='guitar')startTab='guitar';}catch(e){}
+showTab(startTab);
 
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 </script>
+<nav class="tabbar"><a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg><span>Tuner</span></a><a href="lessons.html" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lessons</span></a><a href="song-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg><span>Songs</span></a><a href="practice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Practice</span></a><a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg><span>Profile</span></a></nav>
 </body>
 </html>

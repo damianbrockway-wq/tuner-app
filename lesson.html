@@ -17,7 +17,7 @@
   body{background:var(--bg);color:var(--txt);overflow:hidden;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;
-    padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 14px);-webkit-user-select:none;user-select:none}
+    padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 76px);-webkit-user-select:none;user-select:none}
   .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.5}
   .blob{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:float 16s ease-in-out infinite}
   .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}
@@ -48,9 +48,9 @@
   .row{display:flex;gap:10px;align-items:center}
   button.primary{padding:14px 26px;border:0;border-radius:16px;cursor:pointer;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c6cff,#5b8cff);box-shadow:0 10px 26px rgba(124,108,255,.5)}
   button.ghost{padding:12px 16px;border:1px solid rgba(255,255,255,.14);border-radius:15px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer}
-  .flash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 42%,rgba(39,224,160,.5),transparent 60%)}
+  .flash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(39,224,160,.5),transparent 60%)}
   .flash.go{animation:flash .7s ease-out}
-  @keyframes flash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+  @keyframes flash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
   .pop{position:fixed;top:36%;left:50%;transform:translate(-50%,-50%);z-index:6;font-size:84px;opacity:0;pointer-events:none}
   .pop.go{animation:pop .8s ease-out}
   @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
@@ -59,6 +59,13 @@
   .brand svg{color:#9d8bff}
 
   .popok{display:flex;align-items:center;justify-content:center;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(39,224,160,.3),transparent 72%);color:var(--good);font-size:72px;font-weight:800;text-shadow:0 0 34px rgba(39,224,160,.9)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;align-items:center;padding:6px 10px calc(env(safe-area-inset-bottom) + 6px);background:rgba(10,8,20,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:10px;font-weight:700;letter-spacing:.3px;min-width:56px;padding:4px 0}
+.tabbar a svg{width:20px;height:20px}
+.tabbar a.on{color:#9d8bff}
+
+  .instnote{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-align:center;margin:-2px 0 2px}
+  .instnote b{color:var(--warn);font-weight:800;letter-spacing:.3px;text-transform:none}
 </style>
 </head>
 <body>
@@ -68,6 +75,7 @@
 
 <div class="wrap">
   <div class="top"><a class="back" href="index.html">← Pluck</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> <b id="lnum">LESSON 1</b></div><span style="width:40px"></span></div>
+  <div class="instnote" id="instnote">UKULELE</div>
   <div class="pbar"><i id="pbar"></i></div>
   <div class="step" id="stepn"></div>
   <div class="title" id="title">—</div>
@@ -87,6 +95,7 @@
 </div>
 
 <script>
+const GTR=new URLSearchParams(location.search).get('i')==='g';
 const CHORDS={
   'C' :{frets:[0,0,0,3],fingers:[0,0,0,3],pcs:[0,4,7],   notes:['C','E','G']},
   'Am':{frets:[2,0,0,0],fingers:[2,0,0,0],pcs:[9,0,4],   notes:['A','C','E']},
@@ -103,13 +112,29 @@ const CHORDS={
   'F#m':{frets:[2,1,2,0],fingers:[3,1,2,0],pcs:[1,6,9],  notes:['F♯','A','C♯']},
   'Bm':{frets:[4,2,2,2],fingers:[3,1,1,1],pcs:[11,2,6],  notes:['B','D','F♯']},
 };
-const POOL=Object.keys(CHORDS);
+const GCHORDS={
+  'Em':{frets:[0,2,2,0,0,0],  fingers:[0,2,3,0,0,0],pcs:[4,7,11],notes:['E','G','B']},
+  'Am':{frets:[-1,0,2,2,1,0], fingers:[0,0,2,3,1,0],pcs:[9,0,4], notes:['A','C','E']},
+  'D' :{frets:[-1,-1,0,2,3,2],fingers:[0,0,0,1,3,2],pcs:[2,6,9], notes:['D','F♯','A']},
+  'A' :{frets:[-1,0,2,2,2,0], fingers:[0,0,1,2,3,0],pcs:[9,1,4], notes:['A','C♯','E']},
+  'E' :{frets:[0,2,2,1,0,0],  fingers:[0,2,3,1,0,0],pcs:[4,8,11],notes:['E','G♯','B']},
+  'G' :{frets:[3,2,0,0,0,3], fingers:[2,1,0,0,0,3], pcs:[7,11,2], notes:['G','B','D']},
+  'C' :{frets:[-1,3,2,0,1,0],fingers:[0,3,2,0,1,0], pcs:[0,4,7],  notes:['C','E','G']},
+  'Dm':{frets:[-1,-1,0,2,3,1],fingers:[0,0,0,2,3,1],pcs:[2,5,9],  notes:['D','F','A']},
+  'Fmaj7':{frets:[-1,-1,3,2,1,0],fingers:[0,0,3,2,1,0],pcs:[5,9,0,4],notes:['F','A','C','E']},
+  'F' :{frets:[-1,-1,3,2,1,1],fingers:[0,0,3,2,1,1],pcs:[5,9,0],  notes:['F','A','C']},
+  'A7':{frets:[-1,0,2,0,2,0],fingers:[0,0,2,0,3,0], pcs:[9,1,4,7],notes:['A','C♯','E','G']},
+  'D7':{frets:[-1,-1,0,2,1,2],fingers:[0,0,0,2,1,3],pcs:[2,6,9,0],notes:['D','F♯','A','C']},
+  'E7':{frets:[0,2,0,1,0,0],  fingers:[0,2,0,1,0,0],pcs:[4,8,11,2],notes:['E','G♯','B','D']},
+};
+const CH=GTR?GCHORDS:CHORDS;
+const POOL=Object.keys(CH);
 const CFG=(k,d)=>{const v=parseFloat(localStorage.getItem(k));return isNaN(v)?d:v;};
 const CHORDCOS=CFG('pluckChordCos',0.5);
 let ON={rise:0.0008,floor:0.0015,ratio:2.0,refract:0.18};
 function loadOnsetCfg(){ON={rise:CFG('pluckOnRise',0.0008),floor:CFG('pluckOnFloor',0.0015),ratio:CFG('pluckOnRatio',2.0),refract:CFG('pluckOnRefract',0.18)};}
 loadOnsetCfg();
-const Skill={load(){try{return JSON.parse(localStorage.getItem('pluckSkill')||'{}');}catch(e){return{};}},save(m){try{localStorage.setItem('pluckSkill',JSON.stringify(m));}catch(e){}},
+const Skill={load(){try{return JSON.parse(localStorage.getItem(GTR?'pluckGSkill':'pluckSkill')||'{}');}catch(e){return{};}},save(m){try{localStorage.setItem(GTR?'pluckGSkill':'pluckSkill',JSON.stringify(m));}catch(e){}},
  recordChord(n){const m=this.load();m.chords=m.chords||{};const c=m.chords[n]||{passes:0};c.passes++;c.lastSeen=Date.now();m.chords[n]=c;this.save(m);},
  recordChange(a,b){if(!a||!b||a===b)return;const m=this.load();m.changes=m.changes||{};const k=[a,b].sort().join('>');const c=m.changes[k]||{bestCPM:0,attempts:0};c.attempts++;c.lastSeen=Date.now();m.changes[k]=c;this.save(m);}};
 const $=id=>document.getElementById(id);
@@ -219,8 +244,88 @@ const LESSONS={
   {type:'done', step:'Done', title:'Lesson 13 complete!', body:"Nicely done. Fingerpicking takes patience, your fingers need time to learn which string is which without you looking, but it's worth it. Few things on the ukulele sound as pretty as a chord picked out one note at a time. Keep these patterns in your back pocket and they'll start showing up in your playing on their own."}
  ]
 };
-const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);return (n>=1&&n<=13)?n:1;})();
-const STEPS=LESSONS[LNUM];
+const GLESSONS={
+ 1:[
+  {type:'info', step:'Lesson 1', title:'First sounds', body:"Welcome to guitar. Over these lessons you'll tune up, learn five chords, and play real progressions — one small step at a time, nothing timed. One honest thing first: steel strings make fingertips sore for the first two or three weeks. Then the skin toughens into little calluses and the soreness stops. Short daily practice beats a long rare session every time — ten minutes counts."},
+  {type:'tune', step:'Step 1 · Tune', title:'Get in tune first', body:"A guitar only sounds good in tune. Your six strings, thickest to thinnest, are E A D G B e — the thick low E is the one closest to your face when you look down. Open the Tuner, get all six to say IN TUNE, then come back and tap Continue."},
+  {type:'info', step:'Step 2 · Holding it', title:'How to hold it', body:"Sit with the guitar resting on your leg, back relaxed. Strum with a pick or with the pad of your thumb — both are fine, use whichever feels natural today. The strum comes from your elbow, not your wrist: a loose swing, like shaking water off your hand. If your shoulders creep up, breathe and let them drop."},
+  {type:'strum', count:8, step:'Step 3 · First strums', title:'Eight muted strums', body:"Rest your left hand flat across the strings so they're muted — you'll get a soft chk instead of notes, and that's exactly right. Strum 8 steady down-strums from the elbow: 1 — 2 — 3 — 4, and again. We're teaching your right arm first; chords come next lesson."},
+  {type:'done', step:'Done', title:'Lesson 1 complete!', body:"You made your first sounds — you tuned all six strings and strummed a steady beat, and that's exactly how every guitarist starts. Come back tomorrow if you can, even for ten minutes. Next lesson: your first two chords."}
+ ],
+ 2:[
+  {type:'chord', chord:'Em', step:'Step 1 · New chord', title:'This is Em', body:"Two fingers: middle finger on the A string, 2nd fret, and ring finger on the D string, 2nd fret. Press just behind the metal fret, on the very tips of your fingers. Strum all six strings down — every string rings in Em. It's the easiest chord on the guitar, and it already sounds like music."},
+  {type:'chord', chord:'Am', step:'Step 2 · New chord', title:'This is Am', body:"Like Em, plus one finger: middle on the D string 2nd fret, ring on the G string 2nd fret, index on the B string 1st fret. Now look at the × over the low E — don't strum that string. Start your strum from the A string and brush five strings down."},
+  {type:'seq', seq:['Em','Am','Em','Am'], step:'Step 3 · The change', title:'Switch Em ↔ Am', body:"The change is the real skill. Moving your fingers over one at a time is completely fine for now — speed grows on its own later. Get the shape, strum, and it moves on each time it hears the right chord."},
+  {type:'metro', chord:'Em', bpm:70, beats:8, step:'Step 4 · In time', title:'Strum Em on the click', body:"Hold Em. A steady click plays — strum down on each click. Keeping time matters more than speed. Tap ♪ Beat to hear it again."},
+  {type:'seq', seq:['Em','Em','Am','Am'], step:'Step 5 · Two-chord jam', title:'Two-chord jam', body:"A bar of Em, a bar of Am, and repeat. Play it as a loop and let each chord ring — this is a real minor groove, the moody kind you've heard in plenty of songs. You're playing music on a guitar."},
+  {type:'done', step:'Done', title:'Lesson 2 complete!', body:"Two chords and a groove — that's a real start. If your fingertips sting, that's the calluses forming; it fades in a couple of weeks. Next lesson: the D chord, and the guitar skill of choosing which strings you strum."}
+ ],
+ 3:[
+  {type:'info', step:'Lesson 3', title:'Not every string plays', body:"Here's a big guitar idea a ukulele never has: some chords don't use all six strings. When a diagram shows × over a string, that string stays silent — aim your strum so it starts below it. It feels fussy for the first week; then your arm just knows."},
+  {type:'chord', chord:'D', step:'Step 1 · New chord', title:'This is D', body:"Three fingers in a little triangle: index on the G string 2nd fret, ring on the B string 3rd fret, middle on the thin e string 2nd fret. Two × marks this time — skip the low E and the A. Aim your strum from the D string down, just the thin four strings."},
+  {type:'seq', seq:['D','Em','D','Em'], step:'Step 2 · The change', title:'Switch D ↔ Em', body:"From the tight D triangle to the easy Em and back. Get each shape, strum, and it moves on when it hears the right chord. If D buzzes, check each finger is on its very tip, just behind the fret."},
+  {type:'seq', seq:['D','Am','D','Am'], step:'Step 3 · Another change', title:'Switch D ↔ Am', body:"Now D to Am. Both chords skip the low E, so your strum can stay compact — D from the D string down, Am from the A string down. Slow and clean beats fast and messy every time."},
+  {type:'metro', chord:'D', bpm:70, beats:8, step:'Step 4 · In time', title:'Strum D on the click', body:"Hold D and strum down on each click — remember, from the D string down. Keeping the strum small and steady is the whole exercise. Tap ♪ Beat to hear it again."},
+  {type:'done', step:'Done', title:'Lesson 3 complete!', body:"You learned D and started steering your strum — that's real right-hand control, and it only gets more natural. Three chords now: Em, Am and D. Next lesson: A and E, and your first three-chord jam."}
+ ],
+ 4:[
+  {type:'chord', chord:'A', step:'Step 1 · New chord', title:'This is A', body:"Three fingers squeezed in a row on the 2nd fret: index on the D string, middle on the G string, ring on the B string. It's a tight fit — curl your fingers and use the very tips so each string can ring. Skip the low E (see the ×) and strum the other five."},
+  {type:'chord', chord:'E', step:'Step 2 · New chord', title:'This is E', body:"The full six-string chord: middle finger on the A string 2nd fret, ring on the D string 2nd fret, index on the G string 1st fret. Strum all six strings — the biggest sound you've made yet. Let it ring."},
+  {type:'seq', seq:['A','D','A','D'], step:'Step 3 · The change', title:'Switch A ↔ D', body:"A to D and back. Both skip the low E, and your fingers only travel a fret or two. Get the shape, strum, and it moves on when it hears the right chord."},
+  {type:'seq', seq:['E','A','E','A'], step:'Step 4 · Another change', title:'Switch E ↔ A', body:"A classic pair. Keep your fingers low and close to the strings as they swap over. E strums all six; A skips the low E — let your strum follow the shape."},
+  {type:'seq', seq:['A','D','E','A'], step:'Step 5 · Three-chord jam', title:'Three-chord jam', body:"A, D and E together — this is the I–IV–V, the engine of thousands of songs. Play it round as a loop. Once these three changes feel smooth, an enormous amount of music opens up."},
+  {type:'done', step:'Done', title:'Lesson 4 complete!', body:"Five chords now: Em, Am, D, A and E. The pair you just learned anchors whole styles of music. Give your fingertips a rest — next lesson, no new chords: we turn all of this into music."}
+ ],
+ 5:[
+  {type:'info', step:'Lesson 5', title:'Making it music', body:"No new chords today — this lesson turns shapes into music. The secret is counting: 1-2-3-4, over and over, each number an even heartbeat. Count out loud if you can; it feels silly and it works. Everything you play from now on sits on that count."},
+  {type:'metro', chord:'Em', bpm:80, beats:8, pattern:'downs', step:'Step 1 · On the count', title:'Down-strums on the count', body:"Hold Em and strum down on every number: 1, 2, 3, 4. The click keeps the count for you — land each strum right on it. Steady matters more than strong. Tap ♪ Beat to hear it again."},
+  {type:'metro', chord:'A', bpm:80, beats:8, pattern:'downup', step:'Step 2 · Down-up', title:'Add the up-strum', body:"Now hold A and go down-up: down on the number, up on the 'and' — 1-and-2-and-3-and-4-and. Your hand swings like a pendulum and never stops; the up is just a light brush on the way back. Remember to skip the low E."},
+  {type:'seq', seq:['Em','Am','D','Em'], step:'Step 3 · A minor jam', title:'Em · Am · D · Em', body:"A moody little loop from chords you know. Strum each chord on a steady count — four downs each, or down-ups if you're feeling brave — and keep it rolling."},
+  {type:'seq', seq:['A','D','E','A'], step:'Step 4 · The big loop', title:'A · D · E · A', body:"The three-chord engine again, this time with your counting underneath. Keep the count going through the changes — it's fine if a change lands late at first. The count is the song; the chords catch up."},
+  {type:'done', step:'Done', title:'Lesson 5 complete!', body:"You know five chords and you can change between them in time. That's a working guitarist's toolkit — countless songs run on exactly what you just played. Keep the daily minutes going. Next up: G and C, the two chords that open the door to nearly everything else."}
+ ],
+ 6:[
+  {type:'chord', chord:'G', step:'Step 1 · New chord', title:'This is G', body:"G is a stretch — your hand opens wider than it has so far. Middle finger on the low E string 3rd fret, index on the A string 2nd fret, then ring finger all the way over on the thin e string 3rd fret. All six strings ring, so strum everything. If the stretch fights you, slow down and place the fingers one at a time — the reach comes with days, not weeks."},
+  {type:'seq', seq:['G','Em','G','Em'], step:'Step 2 · The change', title:'Switch G ↔ Em', body:"G and Em are a classic pairing — you'll find them side by side in song after song. Get the shape, strum, and it moves on when it hears the right chord. Both chords use all six strings, so let your strum stay big."},
+  {type:'seq', seq:['G','D','G','D'], step:'Step 3 · A harder change', title:'Switch G ↔ D', body:"This one's harder — the whole hand jumps from the wide G to the tight D triangle. Moving one finger at a time is completely fine for now. And remember D skips the low E and A, so shrink your strum when you land on it."},
+  {type:'metro', chord:'G', bpm:75, beats:8, step:'Step 4 · In time', title:'Strum G on the click', body:"Hold G and strum down on each click, all six strings. Big chord, steady beat — keeping time matters more than strength. Tap ♪ Beat to hear it again."},
+  {type:'done', step:'Done', title:'Lesson 6 complete!', body:"Six chords now — and G is a workhorse: it opens hundreds of songs, from campfire folk to stadium rock. If the stretch still feels wide, that's normal; it shrinks a little every day. Next lesson: C, and with it a whole family of chords."}
+ ],
+ 7:[
+  {type:'chord', chord:'C', step:'Step 1 · New chord', title:'This is C', body:"Ring finger on the A string 3rd fret, middle on the D string 2nd fret, index on the B string 1st fret. See the × over the low E — skip it and strum from the A string down, five strings. The stretch up to that 3rd fret is the work here; arch your fingers so the open strings underneath can ring."},
+  {type:'seq', seq:['C','G','C','G'], step:'Step 2 · The change', title:'Switch C ↔ G', body:"C and G — the two chords guitar music leans on most. All three fingers travel, so go slowly and place them one at a time if you need to. It moves on each time it hears the right chord."},
+  {type:'seq', seq:['C','Am','C','Am'], step:'Step 3 · An easy change', title:'Switch C ↔ Am', body:"Here's a treat: Am is C with one finger moved. Look at the two diagrams and spot it — only your ring finger travels, from the A string over to the G string. Keep the other two planted and this change gets quick almost by itself."},
+  {type:'seq', seq:['C','G','Am','Em'], step:'Step 4 · Four-chord jam', title:'C · G · Am · Em', body:"Play this loop round and round. This exact progression — with one chord you'll meet soon swapped in — powers an absurd share of pop music. Take the changes slowly and let each chord ring for a moment before you move."},
+  {type:'done', step:'Done', title:'Lesson 7 complete!', body:"Seven chords — and with C in your hands you now own the key of C and the key of G, where a huge slice of guitar songs live. Next lesson: one new chord, and your first real strumming pattern."}
+ ],
+ 8:[
+  {type:'chord', chord:'Dm', step:'Step 1 · New chord', title:'This is Dm', body:"Dm is D's moodier cousin. Index on the thin e string 1st fret, middle on the G string 2nd fret, ring on the B string 3rd fret. Two × marks this time — skip both fat strings and strum from the D string down, just the thin four. Hear how one small shift turns bright D into something wistful."},
+  {type:'seq', seq:['Dm','Am','Dm','Am'], step:'Step 2 · The change', title:'Switch Dm ↔ Am', body:"Two minor chords, made for each other. Dm strums from the D string down, Am from the A string down — let the strum follow the shape. Get each chord, strum, and it moves on when it hears the right one."},
+  {type:'metro', chord:'Dm', bpm:75, beats:8, pattern:'downs', step:'Step 3 · Steady downs', title:'All downs first', body:"Hold Dm and strum down on each click — all downs, steady as a clock. This is the floor the famous pattern stands on, so let it get boring before you move on. Tap ♪ Beat to hear it again."},
+  {type:'metro', chord:'C', bpm:75, beats:8, pattern:'island', step:'Step 4 · The pattern', title:'D · D U · U D U', body:"Here it is — the most famous strumming pattern there is: down, down-up, up-down-up. Hold C and follow the arrows with the beat. Your hand never stops swinging; on the gaps it simply misses the strings on purpose. No grading — just follow the feel."},
+  {type:'seq', seq:['Dm','G','C','Am'], step:'Step 5 · Put it together', title:'Dm · G · C · Am', body:"A gentle loop from chords you know, with Dm setting the mood. Strum through the changes — add the new pattern if your hand is up for it, or keep it to steady downs. Both count."},
+  {type:'done', step:'Done', title:'Lesson 8 complete!', body:"Eight chords, and now a real strumming pattern — down, down-up, up-down-up will carry you through more songs than you'd believe. Practise it until your hand does it without you. Next lesson: the chord with the scary reputation, made friendly."}
+ ],
+ 9:[
+  {type:'info', step:'Lesson 9', title:'The friendly F', body:"F has a scary reputation — ask any guitarist about their first barre chord and watch their face. Here's the good news: the full barre version can wait. Two friendlier shapes do F's job in real songs, and you'll learn both today. Nobody listening will know the difference."},
+  {type:'chord', chord:'Fmaj7', step:'Step 1 · New chord', title:'This is Fmaj7', body:"The gentle one. Ring finger on the D string 3rd fret, middle on the G string 2nd fret, index on the B string 1st fret. Skip both fat strings — strum from the D string down — and let the open thin e ring on top. It's a beautiful chord in its own right; plenty of players reach for it even when they don't have to."},
+  {type:'seq', seq:['Fmaj7','C','Fmaj7','C'], step:'Step 2 · The change', title:'Switch Fmaj7 ↔ C', body:"Look how little moves between these two: index stays home on the B string while the middle and ring fingers each hop one string. Get each shape, strum, and it moves on when it hears the right chord."},
+  {type:'chord', chord:'F', step:'Step 3 · New chord', title:'This is mini-F', body:"Same shape, one upgrade: lay your index finger FLAT across BOTH thin strings at the 1st fret — the B and the thin e together. That's your first tiny barre. Still skip the two fat strings and strum from the D string down. It may buzz for days; that's normal, not a sign you're doing it wrong. Press close to the fret and keep at it."},
+  {type:'seq', seq:['C','Am','Fmaj7','G'], step:'Step 4 · The doo-wop jam', title:'C · Am · Fmaj7 · G', body:"The famous 50s progression — every doo-wop ballad you've ever heard lives here. If you took the ukulele lessons, say hello to an old friend, now on six strings. Play it round as a loop and let the Fmaj7 shimmer."},
+  {type:'done', step:'Done', title:'Lesson 9 complete!', body:"You just played F — the chord that scares people off — in two shapes, and nothing bad happened. The full barre F will come much later, and by then your hands will be ready for it. Next lesson: 7th chords, and your ticket to the blues."}
+ ],
+ 10:[
+  {type:'info', step:'Lesson 10', title:'7th chords & the blues', body:"Today: 7th chords. One note added to a chord you know, and suddenly it has attitude — a warm, restless growl that plain chords don't have. They're also your ticket to the blues, which is exactly where this lesson ends up. Best of all, these shapes are easier than the chords they come from."},
+  {type:'chord', chord:'A7', step:'Step 1 · New chord', title:'This is A7', body:"Take your A and lift the middle dot out: middle finger on the D string 2nd fret, ring on the B string 2nd fret, and the G string now rings open between them. Two fingers — easier than A itself. Same rule as A: skip the low E and strum the other five."},
+  {type:'chord', chord:'D7', step:'Step 2 · New chord', title:'This is D7', body:"D rearranged into a neat triangle pointing the other way: middle on the G string 2nd fret, index on the B string 1st fret, ring on the thin e string 2nd fret. Same strum as D — skip the low E and the A, play from the D string down."},
+  {type:'chord', chord:'E7', step:'Step 3 · New chord', title:'This is E7', body:"The easiest yet: E minus one finger. Make your E, then lift your ring finger off the D string and let it ring open — middle stays on the A string 2nd fret, index on the G string 1st fret. Strum all six strings. One finger fewer, twice the swagger."},
+  {type:'seq', seq:['A7','A7','D7','A7','E7','D7','A7','E7'], step:'Step 4 · Eight-bar blues', title:'A7 · D7 · E7', body:"Strum each chord once and let it ring — this loop IS the blues. Play it through twice and you'll hear it: that rolling, restless pull back home to A7 is the sound behind a century of songs."},
+  {type:'done', step:'Done', title:'Lesson 10 complete!', body:"Twelve chords — counting your two F shapes as one — and you can now busk a blues on demand. That's a genuine milestone: plenty of players gig for years on less. Next up: power chords, and the electric side of the instrument."}
+ ]
+};
+if(GTR){const _gl=parseInt(new URLSearchParams(location.search).get('l'),10);if(_gl>10)location.replace('lessons.html');}
+const LNUM=(()=>{const n=parseInt(new URLSearchParams(location.search).get('l'),10);if(GTR)return (n>=1&&n<=10)?n:1;return (n>=1&&n<=13)?n:1;})();
+const STEPS=GTR?GLESSONS[LNUM]:LESSONS[LNUM];
 
 let si=0, step=null, seqPos=0, strumCount=0, matchHold=0, lastT=performance.now(), celebrateUntil=0;
 
@@ -235,13 +340,29 @@ function pitchDetect(buf,rate){
   if(!peaks.length||mx<0.5)return null;const th=mx*0.9;let pt=-1;for(const p of peaks){if(p[1]>=th){pt=p[0];break;}}if(pt<1)return null;
   const a=nsdf[pt-1],bb=nsdf[pt],cc=nsdf[pt+1],sh=(a-cc)/(2*(a-2*bb+cc)),period=pt+(isFinite(sh)?sh:0),f=rate/period;
   return (f>60&&f<1300)?f:null;}
-const STR_LBL=['g','C','E','A'], STR_BASE=[67,60,64,69];
+const STR_LBL=GTR?['E','A','D','G','B','e']:['g','C','E','A'], STR_BASE=GTR?[40,45,50,55,59,64]:[67,60,64,69];
+const NSTR=STR_LBL.length, CHROMA_FLO=GTR?75:120;
 let pickPos=0,pickHold=0;
-let checking=false,checkStr=0,checkRang=[false,false,false,false],checkHold=0,checkChord='';
+let checking=false,checkStr=0,checkRang=STR_LBL.map(()=>false),checkHold=0,checkChord='';
 const PAT={island:['D','','D','U','','U','D','U'],downs:['D','','D','','D','','D',''],downup:['D','U','D','U','D','U','D','U'],folk:['D','','D','U','D','U','D','U']};
 function patternHTML(name){const p=PAT[name];if(!p)return '';
   return '<div style="display:flex;gap:5px;justify-content:center;margin-top:6px">'+p.map(s=>'<div style="width:26px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+(s==='D'?'#27e0a0':s==='U'?'#9d8bff':'rgba(255,255,255,.22)')+'">'+(s==='D'?'↓':s==='U'?'↑':'·')+'</div>').join('')+'</div>';}
+function gdiag(ch,hi){
+  const W=190,H=190,ml=26,mr=26,top=34,bot=14,strings=6,nF=4;
+  const xs=(W-ml-mr)/(strings-1),ys=(H-top-bot)/nF;let s=`<svg class="diagram" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  if(hi!=null){const hx=ml+hi*xs;s+=`<rect x="${hx-8}" y="${top-2}" width="16" height="${H-bot-top}" rx="7" fill="rgba(124,108,255,.3)"/>`;}
+  s+=`<rect x="${ml}" y="${top-4}" width="${(strings-1)*xs}" height="5" rx="2" fill="#cfd4ff"/>`;
+  for(let f=1;f<=nF;f++){const y=top+f*ys;s+=`<line x1="${ml}" y1="${y}" x2="${ml+(strings-1)*xs}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>`;}
+  for(let i=0;i<strings;i++){const x=ml+i*xs;s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-bot}" stroke="rgba(255,255,255,.28)" stroke-width="1.5"/>`;
+    s+=`<text x="${x}" y="${H-1}" text-anchor="middle" font-size="9" fill="#9aa0c8">${STR_LBL[i]}</text>`;}
+  for(let i=0;i<strings;i++){const x=ml+i*xs,fr=ch.frets[i],fg=ch.fingers[i];
+    if(fr===-1){s+=`<text x="${x}" y="${top-11}" text-anchor="middle" font-size="13" font-weight="800" fill="var(--bad)">×</text>`;}
+    else if(fr===0){s+=`<circle cx="${x}" cy="${top-16}" r="5.5" fill="none" stroke="#9aa0c8" stroke-width="1.6"/>`;}
+    else{const y=top+(fr-0.5)*ys;s+=`<circle cx="${x}" cy="${y}" r="10" fill="#7c6cff"/>`;if(fg>0)s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${fg}</text>`;}}
+  return s+'</svg>';
+}
 function diagram(ch,hi){
+  if(GTR)return gdiag(ch,hi);
   const W=150,H=176,ml=22,mr=22,top=30,bot=12,strings=4,nF=4;
   const xs=(W-ml-mr)/(strings-1),ys=(H-top-bot)/nF;let s=`<svg class="diagram" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
   if(hi!=null){const hx=ml+hi*xs;s+=`<rect x="${hx-9}" y="${top-2}" width="18" height="${H-bot-top}" rx="7" fill="rgba(124,108,255,.3)"/>`;}
@@ -268,18 +389,18 @@ function renderStep(){
   $('diagram').innerHTML=''; $('notes').innerHTML=''; $('chart').innerHTML='';
   $('name').style.display='none'; $('count').style.display='none';
   $('skip').style.display='none'; $('replay').style.display='none';
-  seqPos=0; strumCount=0; matchHold=0; pickPos=0; pickHold=0; celebrateUntil=0; stepStart=performance.now(); checking=false; $('check').style.display='none';
+  seqPos=0; strumCount=0; matchHold=0; pickPos=0; pickHold=0; celebrateUntil=0; stepStart=performance.now(); checking=false; $('check').style.display='none'; hintSwapped=false; if(GTR)$('skip').textContent='Skip \u2192';
 
   if(step.type==='chord'){
-    $('diagram').innerHTML=diagram(CHORDS[step.chord]);
-    CHORDS[step.chord].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CHORDS[step.chord].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
-    $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
+    $('diagram').innerHTML=diagram(CH[step.chord]);
+    CH[step.chord].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CH[step.chord].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
+    $('go').textContent='Listening…'; $('go').disabled=true; ensureMic(); if(GTR){$('skip').textContent='Continue anyway \u2192';$('skip').style.display='';}
   } else if(step.type==='strum'){
-    $('diagram').innerHTML=diagram(CHORDS[step.chord]);
+    if(step.chord)$('diagram').innerHTML=diagram(CH[step.chord]);
     $('count').style.display='block'; $('count').textContent='0 / '+step.count;
     $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
   } else if(step.type==='metro'){
-    $('diagram').innerHTML=diagram(CHORDS[step.chord]);
+    $('diagram').innerHTML=diagram(CH[step.chord]);
     if(step.pattern)$('notes').innerHTML=patternHTML(step.pattern);
     $('state').textContent='strum along with the beat';
     $('replay').style.display='';
@@ -288,9 +409,9 @@ function renderStep(){
     if(running)startMetro(step); else pendingMetro=step;
   } else if(step.type==='seq'){
     buildChart(); setSeqTarget();
-    $('diagram').innerHTML=diagram(CHORDS[step.seq[0]]);
-    CHORDS[step.seq[0]].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CHORDS[step.seq[0]].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
-    $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
+    $('diagram').innerHTML=diagram(CH[step.seq[0]]);
+    CH[step.seq[0]].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CH[step.seq[0]].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
+    $('go').textContent='Listening…'; $('go').disabled=true; ensureMic(); if(GTR){$('skip').textContent='Continue anyway \u2192';$('skip').style.display='';}
   } else if(step.type==='pick'){
     pickPos=0; renderPick();
     $('go').textContent='Listening…'; $('go').disabled=true; ensureMic();
@@ -301,7 +422,7 @@ function renderStep(){
 }
 function renderPick(){
   const i=STR_LBL.indexOf(step.seq[pickPos]);
-  $('diagram').innerHTML=diagram(CHORDS[step.chord], i);
+  $('diagram').innerHTML=diagram(CH[step.chord], i);
   $('notes').innerHTML='';
   $('chart').innerHTML=''; step.seq.forEach((sname,j)=>{const d=document.createElement('div');d.className='cell'+(j<pickPos?' done':'')+(j===pickPos?' cur':'');d.textContent=sname;$('chart').appendChild(d);});
   $('state').textContent='pluck the '+step.seq[pickPos]+' string';
@@ -310,35 +431,43 @@ function buildChart(){const c=$('chart');c.innerHTML='';step.seq.forEach((sym,i)
 function setSeqTarget(){
   [...$('chart').children].forEach((el,j)=>{el.classList.toggle('cur',j===seqPos);el.classList.toggle('done',j<seqPos);});
   const sym=step.seq[seqPos];
-  $('diagram').innerHTML=diagram(CHORDS[sym]);
-  $('notes').innerHTML='';CHORDS[sym].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CHORDS[sym].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
+  $('diagram').innerHTML=diagram(CH[sym]);
+  $('notes').innerHTML='';CH[sym].notes.forEach((nn,i)=>{const d=document.createElement('div');d.className='n';d.dataset.pc=CH[sym].pcs[i];d.textContent=nn;$('notes').appendChild(d);});
 }
-function startCheck(){const tgt=step.type==='chord'?step.chord:step.seq[seqPos];if(!tgt||!CHORDS[tgt])return;checking=true;checkChord=tgt;checkStr=0;checkRang=[false,false,false,false];checkHold=0;ensureMic();renderCheck();}
-function renderCheck(){const si=checkStr;$('diagram').innerHTML=diagram(CHORDS[checkChord],si);$('name').style.display='none';$('notes').innerHTML='';
-  $('chart').innerHTML='';for(let j=0;j<4;j++){const d=document.createElement('div');d.className='cell'+(j<checkStr?' done':'')+(j===checkStr?' cur':'');d.textContent=STR_LBL[j];$('chart').appendChild(d);}
+function startCheck(){const tgt=step.type==='chord'?step.chord:step.seq[seqPos];if(!tgt||!CH[tgt])return;checking=true;checkChord=tgt;checkStr=0;checkRang=STR_LBL.map(()=>false);checkHold=0;ensureMic();renderCheck();}
+function renderCheck(){const si=checkStr;const cd=CH[checkChord];$('diagram').innerHTML=diagram(cd,si);$('name').style.display='none';$('notes').innerHTML='';
+  $('chart').innerHTML='';for(let j=0;j<NSTR;j++){const d=document.createElement('div');d.className='cell'+(j<checkStr?' done':'')+(j===checkStr?' cur':'');d.textContent=cd.frets[j]===-1?'×':STR_LBL[j];$('chart').appendChild(d);}
   $('title').textContent='Check '+checkChord+' · string by string';
-  $('body').textContent='Hold '+checkChord+' and pluck the '+STR_LBL[si]+' string on its own — we\'ll find any that aren\'t ringing.';
-  $('state').textContent='pluck the '+STR_LBL[si]+' string';
+  if(cd.frets[si]===-1){
+    checkRang[si]='skip';
+    $('body').textContent='The × over the '+STR_LBL[si]+' string means it stays silent in '+checkChord+' — don\'t pluck it.';
+    $('state').textContent='×  skip this string';
+    const cur=si;setTimeout(()=>{if(checking&&checkStr===cur)nextCheckStr();},1100);
+  } else {
+    $('body').textContent='Hold '+checkChord+' and pluck the '+STR_LBL[si]+' string on its own — we\'ll find any that aren\'t ringing.';
+    $('state').textContent='pluck the '+STR_LBL[si]+' string';
+  }
   $('check').textContent="can't — skip";$('skip').style.display='none';$('replay').style.display='none';}
-function nextCheckStr(){checkStr++;if(checkStr>=4)finishCheck();else renderCheck();}
-function doCheck(dt){const si=checkStr;const expPc=((STR_BASE[si]+CHORDS[checkChord].frets[si])%12+12)%12;
+function nextCheckStr(){checkStr++;if(checkStr>=NSTR)finishCheck();else renderCheck();}
+function doCheck(dt){const si=checkStr;if(CH[checkChord].frets[si]===-1)return;const expPc=((STR_BASE[si]+CH[checkChord].frets[si])%12+12)%12;
   const f=pitchDetect(timeBuf,audioCtx.sampleRate);
   if(f){const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;if(pc===expPc)checkHold+=dt;else checkHold=Math.max(0,checkHold-dt);}
   else checkHold=Math.max(0,checkHold-dt*0.5);
   if(checkHold>0.18){checkHold=0;checkRang[si]=true;nextCheckStr();}}
-function finishCheck(){checkStr=4;$('diagram').innerHTML=diagram(CHORDS[checkChord]);$('name').style.display='none';
-  $('chart').innerHTML='';for(let j=0;j<4;j++){const d=document.createElement('div');d.className='cell '+(checkRang[j]?'done':'');d.textContent=STR_LBL[j]+(checkRang[j]?' ✓':' ✗');$('chart').appendChild(d);}
+function finishCheck(){checkStr=NSTR;$('diagram').innerHTML=diagram(CH[checkChord]);$('name').style.display='none';
+  $('chart').innerHTML='';for(let j=0;j<NSTR;j++){const d=document.createElement('div');const sk=checkRang[j]==='skip';d.className='cell '+(sk?'':(checkRang[j]?'done':''));d.textContent=sk?'×':(STR_LBL[j]+(checkRang[j]?' ✓':' ✗'));$('chart').appendChild(d);}
   $('title').textContent=checkChord+' · result';
-  const dead=[];for(let j=0;j<4;j++)if(!checkRang[j])dead.push(j);
-  if(!dead.length)$('body').innerHTML='All four strings rang — your '+checkChord+' is clean ✓ Tap Back and play it.';
-  else $('body').innerHTML='Found it — '+dead.map(j=>{const fr=CHORDS[checkChord].frets[j];return fr>0?('the <b>'+STR_LBL[j]+'</b> string (fret '+fr+') isn\'t ringing: that finger is likely lying flat or touching it — use the very fingertip and arch the knuckle'):('the open <b>'+STR_LBL[j]+'</b> string isn\'t ringing: another finger is brushing it');}).join('; and ')+'.';
+  const dead=[];for(let j=0;j<NSTR;j++)if(!checkRang[j])dead.push(j);
+  if(!dead.length)$('body').innerHTML=(GTR?'Every string that should ring, rang — your ':'All four strings rang — your ')+checkChord+' is clean ✓ Tap Back and play it.';
+  else $('body').innerHTML='Found it — '+dead.map(j=>{const fr=CH[checkChord].frets[j];return fr>0?('the <b>'+STR_LBL[j]+'</b> string (fret '+fr+') isn\'t ringing: that finger is likely lying flat or touching it — use the very fingertip and arch the knuckle'):('the open <b>'+STR_LBL[j]+'</b> string isn\'t ringing: another finger is brushing it');}).join('; and ')+'.';
   $('state').textContent='';$('check').textContent='↩ Back to the chord';}
-function maybeSkip(){ if(performance.now()-stepStart>9000){ $('skip').style.display=''; if(step&&(step.type==='chord'||step.type==='seq'))$('check').style.display=''; } }
-let stepStart=0;
+function maybeSkip(){ if(performance.now()-stepStart>9000){ $('skip').style.display=''; if(step&&(step.type==='chord'||step.type==='seq'))$('check').style.display=''; }
+  if(GTR&&step&&step.type==='chord'&&!hintSwapped&&performance.now()-stepStart>12000){hintSwapped=true;$('body').textContent='Not hearing it? Check each finger against the diagram, strum slower — or tap Continue anyway.';} }
+let stepStart=0,hintSwapped=false;
 
 /* ---------- advance ---------- */
-function celebrate(){chime();if(navigator.vibrate)navigator.vibrate([16,40,16]);
-  $('flash').classList.remove('go');void $('flash').offsetWidth;$('flash').classList.add('go');
+function flashGo(){const f=document.getElementById('flash');if(!f)return;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');if(navigator.vibrate)navigator.vibrate(35);}
+function celebrate(){chime();flashGo();
   $('pop').classList.remove('go');void $('pop').offsetWidth;$('pop').classList.add('go');}
 function advanceStep(){ stopMetro(); celebrate(); si++; if(si>=STEPS.length){return;} renderStep(); }
 
@@ -387,7 +516,7 @@ function chime(){
   o.connect(g).connect(ctx.destination);o.start(t2);o.stop(t2+0.75);
 }
 function cosine(a,b){let d=0,na=0,nb=0;for(let i=0;i<12;i++){d+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i];}return(na&&nb)?d/Math.sqrt(na*nb):0;}
-function template(name){const t=new Array(12).fill(0);CHORDS[name].pcs.forEach(p=>t[p]=1);return t;}
+function template(name){const t=new Array(12).fill(0);CH[name].pcs.forEach(p=>t[p]=1);return t;}
 const TPL={};POOL.forEach(n=>TPL[n]=template(n));
 
 function loop(){
@@ -401,7 +530,7 @@ function loop(){
   if(checking){doCheck(dt);rafId=requestAnimationFrame(loop);return;}
   let rms=0;for(let i=0;i<timeBuf.length;i++)rms+=timeBuf[i]*timeBuf[i];rms=Math.sqrt(rms/timeBuf.length);
   const binHz=audioCtx.sampleRate/analyser.fftSize;const chroma=new Array(12).fill(0);
-  for(let k=1;k<bins;k++){const f=k*binHz;if(f<120||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
+  for(let k=1;k<bins;k++){const f=k*binHz;if(f<CHROMA_FLO||f>2300)continue;const db=freqBuf[k];if(db<-82)continue;
     const lin=Math.pow(10,db/20);const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12;chroma[pc]+=lin;}
   if(!ema)ema=chroma.slice();else for(let i=0;i<12;i++)ema[i]=ema[i]*0.5+chroma[i]*0.5;
   // onset (combined)
@@ -423,7 +552,7 @@ function loop(){
   } else if(step&&step.type==='pick'){
     const f=pitchDetect(timeBuf,audioCtx.sampleRate);
     const i=STR_LBL.indexOf(step.seq[pickPos]);
-    const expPc=((STR_BASE[i]+CHORDS[step.chord].frets[i])%12+12)%12;
+    const expPc=((STR_BASE[i]+CH[step.chord].frets[i])%12+12)%12;
     if(f){const pc=((Math.round(69+12*Math.log2(f/440))%12)+12)%12; if(pc===expPc)pickHold+=dt; else pickHold=Math.max(0,pickHold-dt);}
     else pickHold=Math.max(0,pickHold-dt*0.5);
     if(pickHold>0.18){pickHold=0; [...$('chart').children][pickPos].classList.add('done'); pickPos++; celebrate();
@@ -435,7 +564,7 @@ function loop(){
     document.querySelectorAll('.notes .n').forEach(n=>{const pc=+n.dataset.pc;n.classList.toggle('lit',ema[pc]>0.30*maxc);});
     const sT=cosine(ema,TPL[target]);
     let best=target,bestS=-1;for(const n of POOL){const sc=cosine(ema,TPL[n]);if(sc>bestS){bestS=sc;best=n;}}
-    const tones=CHORDS[target].pcs;const present=tones.filter(pc=>ema[pc]>0.25*maxc).length;const needed=Math.max(2,tones.length-1);
+    const tones=CH[target].pcs;const present=tones.filter(pc=>ema[pc]>0.25*maxc).length;const needed=Math.max(2,tones.length-1);
     const good=sT>CHORDCOS&&(best===target||sT>=bestS-0.07)&&present>=needed;
     if(good){matchHold+=dt;$('state').textContent='nice — hold it';}
     else{matchHold=Math.max(0,matchHold-dt*0.5);$('state').textContent=(bestS>0.55&&best!==target)?('sounds like '+best):'play '+target+'…';}
@@ -454,17 +583,21 @@ function getCss(v){return getComputedStyle(document.documentElement).getProperty
 /* ---------- buttons ---------- */
 $('go').addEventListener('click',()=>{
   if(step && (step.type==='info'||step.type==='tune'||step.type==='done'||step.type==='metro')){
-    if(step.type==='done'){ try{localStorage.setItem('pluckLesson'+LNUM,'done');}catch(e){} location.href='lessons.html'; return; }
+    if(step.type==='done'){ try{localStorage.setItem((GTR?'pluckGLesson':'pluckLesson')+LNUM,'done');}catch(e){} location.href='lessons.html'; return; }
     stopMetro(); si++; renderStep();
   }
 });
-$('check').addEventListener('click',()=>{ if(!checking){startCheck();} else if(checkStr<4){nextCheckStr();} else {checking=false;renderStep();} });
-$('skip').addEventListener('click',()=>{ if(step&&step.type==='seq'&&seqPos<step.seq.length-1){[...$('chart').children][seqPos].classList.add('done');seqPos++;setSeqTarget();$('skip').style.display='none';stepStart=performance.now();} else {celebrateUntil=performance.now()+300;advanceStep();} });
+$('check').addEventListener('click',()=>{ if(!checking){startCheck();} else if(checkStr<NSTR){nextCheckStr();} else {checking=false;renderStep();} });
+$('skip').addEventListener('click',()=>{ if(GTR&&step&&(step.type==='chord'||step.type==='seq')){celebrateUntil=performance.now()+300;advanceStep();return;} if(step&&step.type==='seq'&&seqPos<step.seq.length-1){[...$('chart').children][seqPos].classList.add('done');seqPos++;setSeqTarget();$('skip').style.display='none';stepStart=performance.now();} else {celebrateUntil=performance.now()+300;advanceStep();} });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 $('replay').addEventListener('click',()=>{if(step&&step.type==='metro'){strumCount=0;$('count').textContent='0 / '+step.count;startMetro(step);}});
-$('lnum').textContent='LESSON '+LNUM;
+$('lnum').textContent=(GTR?'GUITAR · LESSON ':'LESSON ')+LNUM;
+if(GTR){document.title='Pluck · Guitar Lesson '+LNUM;var _gn=document.getElementById('instnote');if(_gn)_gn.textContent='GUITAR';}
 renderStep();
+
+if(!GTR&&localStorage.getItem('pluckInst')==='guitar'){var _in=document.getElementById('instnote');if(_in)_in.innerHTML='UKULELE \u00b7 <b>you\u2019re in guitar mode \u2014 these lessons and songs are ukulele-only for now</b>';}
 </script>
+<nav class="tabbar"><a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg><span>Tuner</span></a><a href="lessons.html" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lessons</span></a><a href="song-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg><span>Songs</span></a><a href="practice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Practice</span></a><a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg><span>Profile</span></a></nav>
 </body>
 </html>

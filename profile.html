@@ -16,7 +16,7 @@
   html,body{height:100%;margin:0}
   body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;min-height:100%;
-    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 18px);-webkit-user-select:none;user-select:none}
+    padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 76px);-webkit-user-select:none;user-select:none}
   .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.45}
   .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
   .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}.b2{width:45vmax;height:45vmax;background:#16d6a2;right:-10%;bottom:0}
@@ -49,6 +49,17 @@
 
   .badge .ic svg{width:20px;height:20px;color:#9d8bff}
   .badge.locked .ic svg{color:var(--muted)}
+
+  .bkhint{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+  .bkbtns{display:flex;gap:10px;margin-top:12px}
+  .bkbtn{flex:1;border-radius:14px;padding:12px 10px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;
+    color:var(--txt);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+  .bkbtn.primary{background:rgba(124,108,255,.18);border-color:rgba(157,139,255,.45);color:#c9c0ff}
+  .bkbtn:active{transform:scale(.98)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;align-items:center;padding:6px 10px calc(env(safe-area-inset-bottom) + 6px);background:rgba(10,8,20,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:10px;font-weight:700;letter-spacing:.3px;min-width:56px;padding:4px 0}
+.tabbar a svg{width:20px;height:20px}
+.tabbar a.on{color:#9d8bff}
 </style>
 </head>
 <body>
@@ -74,6 +85,16 @@
   <div class="card">
     <div class="lbl">Achievements</div>
     <div class="ach" id="ach"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Backup</div>
+    <div class="bkhint">Progress lives on this device only — save a backup file so you can restore it.</div>
+    <div class="bkbtns">
+      <button class="bkbtn primary" id="exportBtn">Export progress</button>
+      <button class="bkbtn" id="importBtn">Import backup</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none">
   </div>
 </div>
 
@@ -132,7 +153,36 @@ $('stats').innerHTML=ST.map(([k,v])=>'<div class="stat"><div class="v">'+v+'</di
 // achievements
 $('ach').innerHTML=ACH.map(a=>{const got=earned.includes(a.id);return '<div class="badge'+(got?'':' locked')+'"><div class="ic">'+a.ic+'</div><div><div class="bn">'+a.n+(got?' ✓':'')+'</div><div class="bd">'+a.d+'</div></div></div>';}).join('');
 
+// backup: export / import
+function exportProgress(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf('pluck')===0)data[k]=localStorage.getItem(k);}
+  const blob=new Blob([JSON.stringify({version:1,date:new Date().toISOString(),data:data},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='pluck-backup.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const btn=$('exportBtn');btn.textContent='Saved ✓';
+  setTimeout(()=>{btn.textContent='Export progress';},1500);
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    let obj;
+    try{obj=JSON.parse(r.result);if(!obj||typeof obj.data!=='object'||obj.data===null||Array.isArray(obj.data))throw new Error('bad');}
+    catch(e){alert("That file doesn't look like a Pluck backup.");return;}
+    if(!confirm('Replace current progress with this backup?'))return;
+    for(const k in obj.data)localStorage.setItem(k,String(obj.data[k]));
+    location.reload();
+  };
+  r.readAsText(file);
+}
+$('exportBtn').onclick=exportProgress;
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=e=>{const f=e.target.files[0];if(f)importBackup(f);e.target.value='';};
+
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 </script>
+<nav class="tabbar"><a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg><span>Tuner</span></a><a href="lessons.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lessons</span></a><a href="song-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg><span>Songs</span></a><a href="practice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Practice</span></a><a href="profile.html" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg><span>Profile</span></a></nav>
 </body>
 </html>

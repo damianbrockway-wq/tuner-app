@@ -15,7 +15,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;margin:0}
   body{background:var(--bg);color:var(--txt);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 14px);-webkit-user-select:none;user-select:none}
+    display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 76px);-webkit-user-select:none;user-select:none}
   .aurora{position:fixed;inset:-30%;z-index:-2;filter:blur(70px);opacity:.45}
   .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
   .b1{width:55vmax;height:55vmax;background:#5b4bff;left:-10%;top:-10%}
@@ -47,6 +47,13 @@
 
   .ic{width:15px;height:15px;vertical-align:-2.5px}
   .brand svg{color:#9d8bff}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;align-items:center;padding:6px 10px calc(env(safe-area-inset-bottom) + 6px);background:rgba(10,8,20,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:10px;font-weight:700;letter-spacing:.3px;min-width:56px;padding:4px 0}
+.tabbar a svg{width:20px;height:20px}
+.tabbar a.on{color:#9d8bff}
+
+  .instnote{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-align:center;margin:-2px 0 2px}
+  .instnote b{color:var(--warn);font-weight:800;letter-spacing:.3px;text-transform:none}
 </style>
 </head>
 <body>
@@ -54,6 +61,7 @@
 <div class="flash" id="flash"></div>
 <div class="wrap">
   <div class="top"><a class="back" href="lessons.html">← Lessons</a><div class="brand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> <b>PRACTICE</b></div><span style="width:40px"></span></div>
+  <div class="instnote" id="instnote">UKULELE</div>
 
   <!-- setup -->
   <div id="setup" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
@@ -307,6 +315,9 @@ $('backBtn').addEventListener('click',()=>{showSetup();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running&&audioCtx&&audioCtx.state!=='running')audioCtx.resume().catch(()=>{});});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}
 showSetup();
+
+if(localStorage.getItem('pluckInst')==='guitar'){var _in=document.getElementById('instnote');if(_in)_in.innerHTML='UKULELE \u00b7 <b>you\u2019re in guitar mode \u2014 these lessons and songs are ukulele-only for now</b>';}
 </script>
+<nav class="tabbar"><a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.2-3.6 7-7.8 7-11.5A7 7 0 0 0 5 9.5C5 13.2 7.8 17.4 12 21z"/></svg><span>Tuner</span></a><a href="lessons.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lessons</span></a><a href="song-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3"/><path d="M12 18V4"/><path d="M12 4c4 1 6 3 6 7"/></svg><span>Songs</span></a><a href="practice.html" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Practice</span></a><a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg><span>Profile</span></a></nav>
 </body>
 </html>
